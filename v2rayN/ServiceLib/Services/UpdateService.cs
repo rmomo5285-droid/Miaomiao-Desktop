@@ -7,46 +7,6 @@ public class UpdateService(Config config, Func<bool, string, Task> updateFunc)
     private readonly int _timeout = 30;
     private static readonly string _tag = "UpdateService";
 
-    public async Task CheckUpdateGuiN(bool preRelease)
-    {
-        var url = string.Empty;
-        var fileName = string.Empty;
-
-        DownloadService downloadHandle = new();
-        downloadHandle.UpdateCompleted += (sender2, args) =>
-        {
-            if (args.Success)
-            {
-                _ = UpdateFunc(false, ResUI.MsgDownloadV2rayCoreSuccessfully);
-                _ = UpdateFunc(true, Utils.UrlEncode(fileName));
-            }
-            else
-            {
-                _ = UpdateFunc(false, args.Msg);
-            }
-        };
-        downloadHandle.Error += (sender2, args) =>
-        {
-            _ = UpdateFunc(false, args.GetException().Message);
-        };
-
-        await UpdateFunc(false, string.Format(ResUI.MsgStartUpdating, ECoreType.v2rayN));
-        var result = await CheckUpdateAsync(downloadHandle, ECoreType.v2rayN, preRelease);
-        if (result.Success)
-        {
-            await UpdateFunc(false, string.Format(ResUI.MsgParsingSuccessfully, ECoreType.v2rayN));
-            await UpdateFunc(false, result.Msg);
-
-            url = result.Url.ToString();
-            fileName = Utils.GetTempPath(Utils.GetGuid());
-            await downloadHandle.DownloadFileAsync(url, fileName, true, _timeout);
-        }
-        else
-        {
-            await UpdateFunc(false, result.Msg);
-        }
-    }
-
     public async Task CheckUpdateCore(ECoreType type, bool preRelease)
     {
         var url = string.Empty;

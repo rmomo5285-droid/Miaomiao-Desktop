@@ -18,6 +18,7 @@ public class TaskManager
     private async Task ScheduledTasks()
     {
         Logging.SaveLog("Setup Scheduled Tasks");
+        await RefreshEndpointManifestAsync();
 
         var numOfExecuted = 1;
         while (true)
@@ -33,6 +34,13 @@ public class TaskManager
             catch (Exception ex)
             {
                 Logging.SaveLog("ScheduledTasks - UpdateTaskRunSubscription", ex);
+            }
+
+            // Refresh the small signed endpoint manifest every 6 hours after the startup check.
+            // This background check never gates loading or using local profiles.
+            if (numOfExecuted % 360 == 0)
+            {
+                await RefreshEndpointManifestAsync();
             }
 
             //Execute once 20 minute
@@ -70,19 +78,23 @@ public class TaskManager
                 }
             }
 
-            //Execute once 24 hour
-            if (numOfExecuted % 1440 == 1)
-            {
-                try
-                {
-                    await UpdateTaskRunCheckUpdate();
-                }
-                catch (Exception ex)
-                {
-                    Logging.SaveLog("ScheduledTasks - UpdateTaskRunCheckUpdate", ex);
-                }
-            }
             numOfExecuted++;
+        }
+    }
+
+    private static async Task RefreshEndpointManifestAsync()
+    {
+        try
+        {
+            var manifestResult = await MiaomiaoEndpointManifestService.Instance.RefreshAsync();
+            if (manifestResult.Updated || manifestResult.ShouldPrompt)
+            {
+                AppEvents.MiaomiaoManifestUpdated.Publish(manifestResult);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("ScheduledTasks - Miaomiao endpoint manifest", ex);
         }
     }
 
@@ -91,7 +103,11 @@ public class TaskManager
         var updateTime = ((DateTimeOffset)DateTime.Now).ToUnixTimeSeconds();
         var lstSubs = (await AppManager.Instance.SubItems())?
             .Where(t => t.AutoUpdateInterval > 0)
+            .Where(t => t.Enabled && t.Url.IsNotEmpty())
+            .Where(t => !MiaomiaoManagedSubscriptionPolicy.IsManaged(t)
+                || MiaomiaoAccountService.Instance.IsAuthenticated)
             .Where(t => updateTime - t.UpdateTime >= t.AutoUpdateInterval * 60)
+            .Where(t => t.NextAttemptTime <= updateTime)
             .ToList();
 
         if (lstSubs is not { Count: > 0 })
@@ -103,16 +119,31 @@ public class TaskManager
 
         foreach (var item in lstSubs)
         {
+            var succeeded = false;
             await SubscriptionHandler.UpdateProcess(_config, item.Id, true, async (success, msg) =>
             {
+                succeeded |= success;
                 await _updateFunc?.Invoke(success, msg);
                 if (success)
                 {
                     Logging.SaveLog($"Update subscription end. {msg}");
                 }
             });
-            item.UpdateTime = updateTime;
-            await ConfigHandler.AddSubItem(_config, item);
+
+            var latest = await AppManager.Instance.GetSubItem(item.Id) ?? item;
+            if (!succeeded)
+            {
+                latest.ConsecutiveFailures++;
+                var retryMinutes = latest.ConsecutiveFailures switch
+                {
+                    1 => 15,
+                    2 => 60,
+                    _ => 360,
+                };
+                latest.NextAttemptTime = updateTime + retryMinutes * 60;
+            }
+
+            await ConfigHandler.AddSubItem(_config, latest);
             await Task.Delay(1000);
         }
     }
@@ -130,22 +161,4 @@ public class TaskManager
         }
     }
 
-    private async Task UpdateTaskRunCheckUpdate()
-    {
-        Logging.SaveLog("Execute check update");
-
-        var updateService = new UpdateService(_config, async (success, msg) => await Task.CompletedTask);
-
-        var msgs = await updateService.CheckHasUpdateOnlyAll(_config.CheckUpdateItem.CheckPreReleaseUpdate);
-        foreach (var msg in msgs)
-        {
-            await _updateFunc?.Invoke(false, msg);
-        }
-        NoticeManager.Instance.Enqueue(string.Join("\n", msgs));
-
-        if (msgs.Count > 0)
-        {
-            AppEvents.HasUpdateNotified.Publish(true);
-        }
-    }
 }

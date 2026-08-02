@@ -39,15 +39,6 @@ public class CoreManager
             var coreInfo = CoreInfoManager.Instance.GetCoreInfo();
             foreach (var it in coreInfo)
             {
-                if (it.CoreType == ECoreType.v2rayN)
-                {
-                    if (Utils.UpgradeAppExists(out var upgradeFileName))
-                    {
-                        await Utils.SetLinuxChmod(upgradeFileName);
-                    }
-                    continue;
-                }
-
                 foreach (var name in it.CoreExes)
                 {
                     var exe = Utils.GetBinPath(Utils.GetExeName(name), it.CoreType.ToString());

@@ -1,4 +1,4 @@
-namespace AmazTool;
+namespace MiaomiaoHelper;
 
 internal static class Program
 {
@@ -7,49 +7,21 @@ internal static class Program
     {
         try
         {
-            // If no arguments are provided, display usage guidelines and exit
-            if (args.Length == 0)
+            if (args.Length == 0 || !args[0].Equals("rebootas", StringComparison.OrdinalIgnoreCase))
             {
                 ShowHelp();
+                Environment.ExitCode = 64;
                 return;
             }
 
-            // Log all arguments for debugging purposes
-            foreach (var arg in args)
-            {
-                Console.WriteLine(arg);
-            }
-
-            // Parse command based on first argument
-            switch (args[0].ToLowerInvariant())
-            {
-                case "rebootas":
-                    // Handle application restart
-                    HandleRebootAsync();
-                    break;
-
-                case "help":
-                case "--help":
-                case "-h":
-                case "/?":
-                    // Display help information
-                    ShowHelp();
-                    break;
-
-                default:
-                    // Default behavior: handle as upgrade data
-                    // Maintain backward compatibility with existing usage pattern
-                    var argData = Uri.UnescapeDataString(string.Join(" ", args));
-                    HandleUpgrade(argData);
-                    break;
-            }
+            Console.WriteLine("Restarting Miaomiao...");
+            Thread.Sleep(1000);
+            Utils.StartMiaomiao();
         }
         catch (Exception ex)
         {
-            // Global exception handling
-            Console.WriteLine($"An error occurred: {ex.Message}");
-            Console.WriteLine("Press any key to exit...");
-            Console.ReadKey();
+            Console.Error.WriteLine($"An error occurred: {ex.Message}");
+            Environment.ExitCode = 1;
         }
     }
 
@@ -58,30 +30,6 @@ internal static class Program
     /// </summary>
     private static void ShowHelp()
     {
-        Console.WriteLine(Resx.Resource.Guidelines);
-        Console.WriteLine("Available commands:");
-        Console.WriteLine("  rebootas             - Restart the application");
-        Console.WriteLine("  help                 - Display this help information");
-        Thread.Sleep(5000);
-    }
-
-    /// <summary>
-    /// Handle application restart
-    /// </summary>
-    private static void HandleRebootAsync()
-    {
-        Console.WriteLine("Restarting application...");
-        Thread.Sleep(1000);
-        Utils.StartV2RayN();
-    }
-
-    /// <summary>
-    /// Handle application upgrade with the provided data
-    /// </summary>
-    /// <param name="upgradeData">Data for the upgrade process</param>
-    private static void HandleUpgrade(string upgradeData)
-    {
-        Console.WriteLine("Upgrading application...");
-        UpgradeApp.Upgrade(upgradeData);
+        Console.WriteLine("Usage: MiaomiaoHelper rebootas");
     }
 }

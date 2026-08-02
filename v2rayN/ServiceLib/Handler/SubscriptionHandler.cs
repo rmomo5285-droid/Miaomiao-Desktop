@@ -2,7 +2,22 @@ namespace ServiceLib.Handler;
 
 public static class SubscriptionHandler
 {
+    private static readonly SemaphoreSlim UpdateGate = new(1, 1);
+
     public static async Task UpdateProcess(Config config, string subId, bool blProxy, Func<bool, string, Task> updateFunc)
+    {
+        await UpdateGate.WaitAsync();
+        try
+        {
+            await UpdateProcessCore(config, subId, blProxy, updateFunc);
+        }
+        finally
+        {
+            UpdateGate.Release();
+        }
+    }
+
+    private static async Task UpdateProcessCore(Config config, string subId, bool blProxy, Func<bool, string, Task> updateFunc)
     {
         await updateFunc?.Invoke(false, ResUI.MsgUpdateSubscriptionStart);
         var subItem = await AppManager.Instance.SubItems();
@@ -195,20 +210,24 @@ public static class SubscriptionHandler
 
         await updateFunc?.Invoke(false, $"{hashCode}{ResUI.MsgGetSubscriptionSuccessfully}");
 
-        // If result is too short, display content directly
-        if (result.Length < 99)
-        {
-            await updateFunc?.Invoke(false, $"{hashCode}{result}");
-        }
-
         await updateFunc?.Invoke(false, $"{hashCode}{ResUI.MsgStartParsingSubscription}");
 
         // Add servers to configuration
         var ret = await ConfigHandler.AddBatchServers(config, result, id, true);
         if (ret <= 0)
         {
-            Logging.SaveLog("FailedImportSubscription");
-            Logging.SaveLog(result);
+            Logging.SaveLog($"FailedImportSubscription responseLength={result.Length}");
+        }
+        else
+        {
+            var subItem = await AppManager.Instance.GetSubItem(id);
+            if (subItem != null)
+            {
+                subItem.UpdateTime = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
+                subItem.NextAttemptTime = 0;
+                subItem.ConsecutiveFailures = 0;
+                await ConfigHandler.AddSubItem(config, subItem);
+            }
         }
 
         // Update completion message

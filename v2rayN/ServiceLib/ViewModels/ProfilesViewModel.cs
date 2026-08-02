@@ -904,7 +904,7 @@ public partial class ProfilesViewModel : MyReactiveObject
         else
         {
             item = await AppManager.Instance.GetSubItem(_config.SubIndexId);
-            if (item is null)
+            if (item is null || MiaomiaoManagedSubscriptionPolicy.IsManaged(item))
             {
                 return;
             }
@@ -920,7 +920,7 @@ public partial class ProfilesViewModel : MyReactiveObject
     private async Task DeleteSubAsync()
     {
         var item = await AppManager.Instance.GetSubItem(_config.SubIndexId);
-        if (item is null)
+        if (item is null || MiaomiaoManagedSubscriptionPolicy.IsManaged(item))
         {
             return;
         }

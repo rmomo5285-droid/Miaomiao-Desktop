@@ -142,9 +142,9 @@ public partial class BackupAndRestoreViewModel : MyReactiveObject
             }
             else
             {
-                if (Utils.UpgradeAppExists(out var upgradeFileName))
+                if (Utils.RestartHelperExists(out var helperFileName))
                 {
-                    _ = ProcUtils.ProcessStart(upgradeFileName, Global.RebootAs, Utils.StartupPath());
+                    _ = ProcUtils.ProcessStart(helperFileName, Global.RebootAs, Utils.StartupPath());
                 }
             }
             AppManager.Instance.Shutdown(true);
@@ -163,7 +163,7 @@ public partial class BackupAndRestoreViewModel : MyReactiveObject
         }
 
         var configDir = Utils.GetConfigPath();
-        var configDirZipTemp = Utils.GetTempPath($"v2rayN_{DateTime.Now:yyyyMMddHHmmss}");
+        var configDirZipTemp = Utils.GetTempPath($"Miaomiao_{DateTime.Now:yyyyMMddHHmmss}");
         var configDirTemp = Path.Combine(configDirZipTemp, _guiConfigs);
 
         FileUtils.CopyDirectory(configDir, configDirTemp, false, true, "");

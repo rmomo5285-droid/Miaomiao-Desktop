@@ -417,9 +417,6 @@
   <data name="menuOptionSetting" xml:space="preserve">
     <value>參數設定</value>
   </data>
-  <data name="menuPromotion" xml:space="preserve">
-    <value>推廣</value>
-  </data>
   <data name="menuReload" xml:space="preserve">
     <value>重啟服務</value>
   </data>
@@ -715,7 +712,7 @@
     <value>開啟 Mux 多路復用</value>
   </data>
   <data name="TbSettingsN" xml:space="preserve">
-    <value>v2rayN 設定</value>
+    <value>喵喵設定</value>
   </data>
   <data name="TbSettingsPass" xml:space="preserve">
     <value>認證密碼</value>
@@ -1305,9 +1302,6 @@
   <data name="TbSettingsSrsFilesSource" xml:space="preserve">
     <value>sing-box ruleset 檔案來源 (可選)</value>
   </data>
-  <data name="UpgradeAppNotExistTip" xml:space="preserve">
-    <value>升級工具 App 不存在</value>
-  </data>
   <data name="TbSettingsRoutingRulesSource" xml:space="preserve">
     <value>路由規則集來源 (可選)</value>
   </data>
@@ -1756,7 +1750,7 @@
     <value>PreSharedKey</value>
   </data>
   <data name="menuExport2InnerUri" xml:space="preserve">
-    <value>匯出 v2rayN 內部分享連結至剪貼簿（多選）</value>
+    <value>匯出喵喵內部分享連結至剪貼簿（多選）</value>
   </data>
   <data name="MsgCheckUpdateHasNewVersion" xml:space="preserve">
     <value>{0} 有新版本可用：{1}</value>
@@ -1829,7 +1823,7 @@
     <value>根憑證提供者</value>
   </data>
   <data name="TbRootCertificateProviderTip" xml:space="preserve">
-    <value>僅適用於 v2rayN GUI 的下載與網路請求，不影響核心的憑證驗證</value>
+    <value>僅適用於喵喵 GUI 的下載與網路請求，不影響核心的憑證驗證</value>
   </data>
   <data name="TbProxyDialResolveStrategy" xml:space="preserve">
     <value>連線代理解析策略</value>

@@ -19,7 +19,7 @@
     </UserControl.Resources>
     <Grid>
         <DockPanel>
-            <WrapPanel Margin="2" DockPanel.Dock="Top">
+            <WrapPanel Margin="4,2,4,10" DockPanel.Dock="Top">
                 <ListBox
                     x:Name="lstGroup"
                     Margin="{StaticResource MarginLr4}"
@@ -63,8 +63,9 @@
 
                     <TextBox
                         x:Name="txtServerFilter"
-                        Width="200"
+                        Width="240"
                         Margin="{StaticResource MarginLr4}"
+                        Classes="MiaomiaoInput"
                         VerticalContentAlignment="Center"
                         PlaceholderText="{x:Static resx:ResUI.MsgServerTitle}" />
 
@@ -102,11 +103,10 @@
             <DataGrid
                 x:Name="lstProfiles"
                 AutoGenerateColumns="False"
-                BorderThickness="1"
                 CanUserReorderColumns="True"
                 CanUserResizeColumns="True"
                 Classes.InsetContent="True"
-                GridLinesVisibility="All"
+                GridLinesVisibility="Horizontal"
                 HeadersVisibility="All"
                 IsReadOnly="True"
                 ItemsSource="{Binding ProfileItems}">

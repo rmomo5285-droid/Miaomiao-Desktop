@@ -61,3 +61,10 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF   diff=astextplain
+
+# CI scripts and copied legal texts must be byte-stable across platforms.
+*.sh text eol=lf
+*.tsv text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+packaging/licenses/*.txt text eol=lf

@@ -259,6 +259,15 @@ public partial class MainWindowViewModel : MyReactiveObject
             .ObserveOn(RxSchedulers.MainThreadScheduler)
             .Subscribe(async bl => BlNewUpdate = bl);
 
+        AppEvents.MiaomiaoManagedSubscriptionUpdated
+            .AsObservable()
+            .ObserveOn(RxSchedulers.MainThreadScheduler)
+            .Subscribe(async _ =>
+            {
+                await RefreshServersDispatcherAsync();
+                await Reload();
+            });
+
         #endregion AppEvents
 
         ProfilesViewModel.RefreshServersRequested

@@ -417,9 +417,6 @@
   <data name="menuOptionSetting" xml:space="preserve">
     <value>Paramètres config</value>
   </data>
-  <data name="menuPromotion" xml:space="preserve">
-    <value>Promotion</value>
-  </data>
   <data name="menuReload" xml:space="preserve">
     <value>Redémarrer</value>
   </data>
@@ -715,7 +712,7 @@
     <value>Activer Mux multiplex</value>
   </data>
   <data name="TbSettingsN" xml:space="preserve">
-    <value>Paramètres v2rayN</value>
+    <value>Paramètres Miaomiao</value>
   </data>
   <data name="TbSettingsPass" xml:space="preserve">
     <value>Mot de passe d’authentification</value>
@@ -1299,9 +1296,6 @@
   <data name="TbSettingsSrsFilesSource" xml:space="preserve">
     <value>Source des fichiers de jeux de règles sing-box (optionnel)</value>
   </data>
-  <data name="UpgradeAppNotExistTip" xml:space="preserve">
-    <value>L’application d’outil de mise à niveau est introuvable</value>
-  </data>
   <data name="TbSettingsRoutingRulesSource" xml:space="preserve">
     <value>Source des jeux de règles de routage (optionnel)</value>
   </data>
@@ -1750,7 +1744,7 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
     <value>PreSharedKey</value>
   </data>
   <data name="menuExport2InnerUri" xml:space="preserve">
-    <value>Exporter le lien interne v2rayN vers le presse-papiers</value>
+    <value>Exporter le lien interne Miaomiao vers le presse-papiers</value>
   </data>
   <data name="MsgCheckUpdateHasNewVersion" xml:space="preserve">
     <value>{0} a une nouvelle version disponible: {1}</value>

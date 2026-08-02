@@ -18,7 +18,8 @@ public class InnerFmt
                     continue;
                 }
                 var trimmedLine = line.Trim();
-                if (!trimmedLine.StartsWith(Global.InnerUriProtocol, StringComparison.OrdinalIgnoreCase))
+                if (!trimmedLine.StartsWith(Global.InnerUriProtocol, StringComparison.OrdinalIgnoreCase)
+                    && !trimmedLine.StartsWith(Global.LegacyInnerUriProtocol, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
@@ -147,7 +148,7 @@ public class InnerFmt
 
     private static ProfileItem? ResolveSingle(string str)
     {
-        // format: v2rayn://vless/{url-safe base64 encoded_string}
+        // format: miaomiao://vless/{url-safe base64 encoded_string}
         var parsedUri = Utils.TryUri(str);
         if (parsedUri is null)
         {

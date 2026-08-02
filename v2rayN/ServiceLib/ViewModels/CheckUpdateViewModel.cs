@@ -3,7 +3,6 @@ namespace ServiceLib.ViewModels;
 public partial class CheckUpdateViewModel : MyReactiveObject
 {
     private const string _geo = "GeoFiles";
-    private readonly ECoreType _v2rayN = ECoreType.v2rayN;
     private List<CheckUpdateModel> _lstUpdated = [];
     private static readonly string _tag = "CheckUpdateViewModel";
 
@@ -22,14 +21,12 @@ public partial class CheckUpdateViewModel : MyReactiveObject
         CheckUpdateCmd.ThrownExceptions.Subscribe(ex =>
         {
             Logging.SaveLog(_tag, ex);
-            _ = UpdateView(_v2rayN, ex.Message);
         });
 
         CheckOnlyCmd = ReactiveCommand.CreateFromTask(CheckOnly);
         CheckOnlyCmd.ThrownExceptions.Subscribe(ex =>
         {
             Logging.SaveLog(_tag, ex);
-            _ = UpdateView(_v2rayN, ex.Message);
         });
 
         EnableCheckPreReleaseUpdate = _config.CheckUpdateItem.CheckPreReleaseUpdate;
@@ -56,17 +53,6 @@ public partial class CheckUpdateViewModel : MyReactiveObject
 
     private CheckUpdateModel GetCheckUpdateModel(ECoreType coreType)
     {
-        if (coreType == _v2rayN && Utils.IsPackagedInstall())
-        {
-            return new()
-            {
-                IsSelected = false,
-                CoreType = coreType,
-                IsGeoFile = false,
-                Remarks = ResUI.menuCheckUpdate + $" ({ResUI.MsgNotSupport})",
-            };
-        }
-
         AppManager.Instance.LastCheckUpdateResults.TryGetValue(coreType, out var lastResult);
         return new()
         {
@@ -184,15 +170,6 @@ public partial class CheckUpdateViewModel : MyReactiveObject
             {
                 await CheckUpdateGeo();
             }
-            else if (item.CoreType == _v2rayN)
-            {
-                if (Utils.IsPackagedInstall())
-                {
-                    await UpdateView(_v2rayN, ResUI.MsgNotSupport);
-                    continue;
-                }
-                await CheckUpdateN(EnableCheckPreReleaseUpdate);
-            }
             else if (item.CoreType == ECoreType.Xray)
             {
                 await CheckUpdateCore(item, EnableCheckPreReleaseUpdate);
@@ -234,21 +211,6 @@ public partial class CheckUpdateViewModel : MyReactiveObject
             .ContinueWith(t => UpdatedPlusPlus(null, ""));
     }
 
-    private async Task CheckUpdateN(bool preRelease)
-    {
-        async Task _updateUI(bool success, string msg)
-        {
-            await UpdateView(_v2rayN, msg);
-            if (success)
-            {
-                await UpdateView(_v2rayN, ResUI.OperationSuccess);
-                UpdatedPlusPlus(_v2rayN, msg);
-            }
-        }
-        await new UpdateService(_config, _updateUI).CheckUpdateGuiN(preRelease)
-            .ContinueWith(t => UpdatedPlusPlus(_v2rayN, ""));
-    }
-
     private async Task CheckUpdateCore(CheckUpdateModel model, bool preRelease)
     {
         async Task _updateUI(bool success, string msg)
@@ -276,11 +238,6 @@ public partial class CheckUpdateViewModel : MyReactiveObject
             await Task.Delay(2000);
             await UpgradeCore();
 
-            if (_lstUpdated.Any(x => x.CoreType == _v2rayN && x.IsFinished == true))
-            {
-                await Task.Delay(1000);
-                await UpgradeN();
-            }
             await Task.Delay(1000);
             await UpdateFinishedSub(true);
         }
@@ -304,35 +261,6 @@ public partial class CheckUpdateViewModel : MyReactiveObject
         else
         {
             await CoreManager.Instance.CoreStop();
-        }
-    }
-
-    private async Task UpgradeN()
-    {
-        try
-        {
-            var fileName = _lstUpdated.FirstOrDefault(x => x.CoreType == _v2rayN)?.FileName;
-            if (fileName.IsNullOrEmpty())
-            {
-                return;
-            }
-            if (!Utils.UpgradeAppExists(out var upgradeFileName))
-            {
-                await UpdateView(_v2rayN, ResUI.UpgradeAppNotExistTip);
-                NoticeManager.Instance.SendMessageAndEnqueue(ResUI.UpgradeAppNotExistTip);
-                Logging.SaveLog("UpgradeApp does not exist");
-                return;
-            }
-
-            var id = ProcUtils.ProcessStart(upgradeFileName, fileName, Utils.StartupPath());
-            if (id > 0)
-            {
-                await AppManager.Instance.AppExitAsync(true);
-            }
-        }
-        catch (Exception ex)
-        {
-            await UpdateView(_v2rayN, ex.Message);
         }
     }
 

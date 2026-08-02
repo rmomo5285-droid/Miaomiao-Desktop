@@ -1,78 +1,35 @@
-# v2rayN
+# 喵喵桌面端 (Miaomiao Desktop)
 
-### A GUI client for Windows, Linux and macOS. Support [Xray](https://github.com/XTLS/Xray-core) and [sing-box](https://github.com/SagerNet/sing-box) and [others](https://github.com/2dust/v2rayN/wiki/List-of-supported-cores)
+喵喵桌面端是基于 [v2rayN](https://github.com/2dust/v2rayN) 的 GPL-3.0 衍生客户端，
+面向 Windows、macOS 和 Linux。项目保留 v2rayN 的代理能力，在客户端内增加喵喵账户、
+套餐购买、公告和托管订阅能力。
 
-[![CodeFactor](https://www.codefactor.io/repository/github/2dust/v2rayn/badge)](https://www.codefactor.io/repository/github/2dust/v2rayn)
-[![Release](https://img.shields.io/github/v/release/2dust/v2rayN?logo=github&label=Release)](https://github.com/2dust/v2rayN/releases)
-[![Downloads](https://img.shields.io/github/downloads/2dust/v2rayN/latest/total?logo=github&label=Downloads)](https://github.com/2dust/v2rayN/releases)
-[![Telegram](https://img.shields.io/badge/Telegram-Chat-26A5E4?logo=telegram)](https://t.me/v2rayn)
- 
-[![Windows](https://img.shields.io/badge/Windows-supported-0078D6?logo=windows)](https://github.com/2dust/v2rayN) 
-[![Linux](https://img.shields.io/badge/Linux-supported-FCC624?logo=linux&logoColor=000)](https://github.com/2dust/v2rayN) 
-[![macOS](https://img.shields.io/badge/macOS-supported-000000?logo=apple)](https://github.com/2dust/v2rayN) 
-[![GPG Signed](https://img.shields.io/badge/GPG-signed-4B32C3?logo=gnuprivacyguard)](https://github.com/2dust/v2rayN)
+## 客户端策略
 
+- 登录后由账户接口下发唯一的 HTTPS 订阅地址，用户不需要手工粘贴机场订阅。
+- 托管订阅每 48 小时自动更新；登录、支付完成和用户主动刷新可立即更新。
+- 更新失败时保留本地节点，并按 15 分钟、60 分钟、6 小时退避重试。
+- 服务入口由 ECDSA P-256 签名清单迁移；清单只允许下发 HTTPS 入口和展示型公告，不能执行远程命令。
+- Hysteria2 节点固定使用 sing-box 内核，TUN 默认 MTU 为 1280。
 
----
+## 支持平台
 
-## Download / 下载
+| 平台 | 架构 | 发布格式 |
+| --- | --- | --- |
+| Windows | x64, arm64 | ZIP |
+| macOS | x64, arm64 | DMG |
+| Linux | x64, arm64 | DEB, RPM |
 
-Download the latest release here:
+正式安装包只通过 [GitHub Actions](.github/workflows/release-desktop.yml) 构建。稳定版发布要求：
 
-在这里下载最新版本：
+- Windows 安装包使用主题包含 `Miaomiao` 的代码签名证书；
+- macOS 应用使用 `Miaomiao` 品牌的 Developer ID，并完成公证；
+- 所有发布文件生成 SHA-256 清单和喵喵发布密钥的 GPG 签名。
 
-[https://github.com/2dust/v2rayN/releases](https://github.com/2dust/v2rayN/releases)
+## 开发与许可
 
+源代码继承上游 v2rayN，并继续遵循仓库中的 [GNU GPL v3](LICENSE)。分发修改版时必须同时满足
+GPL-3.0 的源代码提供义务。上游项目、Xray、sing-box 及打包内核仍分别归其原作者所有；
+`Miaomiao` / `喵喵` 仅表示本衍生客户端的产品品牌。
 
-> [!TIP]
-> v2rayN is the desktop version. For the mobile version, please visit the v2rayNG \
-> v2rayN 是电脑版，手机版请访问 v2rayNG
->
-> https://github.com/2dust/v2rayNG
-
----
-
-## Documentation / 使用文档
-
-Read the Wiki for usage guides and configuration details.
-
-请阅读 Wiki 获取使用说明和配置教程。
-
-[https://github.com/2dust/v2rayN/wiki](https://github.com/2dust/v2rayN/wiki)
-
----
-
-## Supported Platforms / 支持平台
-
-| Platform / 平台 | x64 | x86 | arm64 | riscv64 | loong64 |
-| --- | --- | --- | --- | --- | --- |
-| Windows | ✅ | ✅ | ✅ | - | - |
-| Linux | ✅ | - | ✅ | ✅ | ✅ |
-| macOS | ✅ | - | ✅ | - | - |
-
----
-
-## GPG Verification / GPG 签名校验
-
-Release files are signed with GPG to verify authenticity and integrity, helping prevent mirror, ISP, or CDN hijacking.
-
-发布文件已使用 GPG 签名，可用于校验文件真实性与完整性，预防镜像站、运营商或 CDN 劫持。
-
-### Fingerprint / 公钥指纹
-
-```text
-7694 5E9F 3E9A 168F 8070 F195 805D 661C
-134D FAF6 8903 C199 463C 31E5 AE90 3AE0
-```
-
----
-
-## Community / 社区
-
-Telegram Group / Telegram 群组：
-
-[https://t.me/v2rayN](https://t.me/v2rayN)
-
-Telegram Channel / Telegram 频道：
-
-[https://t.me/github_2dust](https://t.me/github_2dust)
+上游文档和协议兼容说明：[v2rayN Wiki](https://github.com/2dust/v2rayN/wiki)。

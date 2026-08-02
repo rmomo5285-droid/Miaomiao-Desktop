@@ -1375,15 +1375,6 @@ namespace ServiceLib.Resx {
         }
         
         /// <summary>
-        ///   查找类似 Promotion 的本地化字符串。
-        /// </summary>
-        public static string menuPromotion {
-            get {
-                return ResourceManager.GetString("menuPromotion", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   查找类似 Latency Test 的本地化字符串。
         /// </summary>
         public static string menuProxiesDelaytest {
@@ -5238,13 +5229,5 @@ namespace ServiceLib.Resx {
             }
         }
         
-        /// <summary>
-        ///   查找类似 Upgrade App does not exist 的本地化字符串。
-        /// </summary>
-        public static string UpgradeAppNotExistTip {
-            get {
-                return ResourceManager.GetString("UpgradeAppNotExistTip", resourceCulture);
-            }
-        }
     }
 }

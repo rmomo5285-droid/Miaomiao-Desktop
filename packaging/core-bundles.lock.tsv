@@ -1,0 +1,9 @@
+target	url	sha256
+windows-x64	https://raw.githubusercontent.com/2dust/v2rayN-core-bin/753dae71e7260b8374739f18bc683912aee8dfe6/v2rayN-windows-64.zip	1551d5c97d4c433866bd78c5cb58e9a8a0f9b3d603b0d06700bcc749d3755c3a
+windows-arm64	https://raw.githubusercontent.com/2dust/v2rayN-core-bin/753dae71e7260b8374739f18bc683912aee8dfe6/v2rayN-windows-arm64.zip	5ba0a052b3f43a6add314390b11a2b39f9f5e39a954de25c55bb8e8428770273
+macos-x64	https://raw.githubusercontent.com/2dust/v2rayN-core-bin/753dae71e7260b8374739f18bc683912aee8dfe6/v2rayN-macos-64.zip	23b795a27783077b878a56e6579d928bbab36fcb21ee33636830f3afcd549aac
+macos-arm64	https://raw.githubusercontent.com/2dust/v2rayN-core-bin/753dae71e7260b8374739f18bc683912aee8dfe6/v2rayN-macos-arm64.zip	9d4e3089540b204ca0762dfaf315bacad67002720c1e93368003163903f50c77
+linux-x64	https://raw.githubusercontent.com/2dust/v2rayN-core-bin/753dae71e7260b8374739f18bc683912aee8dfe6/v2rayN-linux-64.zip	62c1a1849aea8ebcad40ae64628cf38ec2b484ce7263ea75012d48ec949af022
+linux-arm64	https://raw.githubusercontent.com/2dust/v2rayN-core-bin/753dae71e7260b8374739f18bc683912aee8dfe6/v2rayN-linux-arm64.zip	9fa66e9934cfcd0c98c34f4865c8fcb26144596da52eb8d9fcb998215343bfe9
+linux-riscv64	https://raw.githubusercontent.com/2dust/v2rayN-core-bin/753dae71e7260b8374739f18bc683912aee8dfe6/v2rayN-linux-riscv64.zip	fe52921e1528254556b600cf5c5738dfb58fd8097eb089f901553881d4c8ded9
+linux-loongarch64	https://raw.githubusercontent.com/2dust/v2rayN-core-bin/753dae71e7260b8374739f18bc683912aee8dfe6/v2rayN-linux-loong64.zip	e5afc154780f40dc121250428bac3701da19f91dd57c1b072c0b9a7037bd3b32

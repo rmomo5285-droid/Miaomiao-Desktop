@@ -96,7 +96,7 @@ public class DownloadService
         else
         {
             Error?.Invoke(this, new ErrorEventArgs(new Exception("StatusCode error: " + response.StatusCode)));
-            Logging.SaveLog("StatusCode error: " + url);
+            Logging.SaveLog("StatusCode error: " + response.StatusCode);
             return null;
         }
     }

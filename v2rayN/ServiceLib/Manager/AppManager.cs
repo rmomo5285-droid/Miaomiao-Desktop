@@ -97,7 +97,7 @@ public sealed class AppManager
 
     public bool InitComponents()
     {
-        Logging.SaveLog($"v2rayN start up | {Utils.GetRuntimeInfo()}");
+        Logging.SaveLog($"Miaomiao start up | {Utils.GetRuntimeInfo()}");
         Logging.LoggingEnabled(_config.GuiItem.EnableLog);
 
         //First determine the port value
@@ -665,6 +665,11 @@ public sealed class AppManager
 
     public ECoreType GetCoreType(ProfileItem? profileItem, EConfigType eConfigType)
     {
+        if (eConfigType == EConfigType.Hysteria2)
+        {
+            return ECoreType.sing_box;
+        }
+
         if (profileItem?.CoreType != null)
         {
             return (ECoreType)profileItem.CoreType;

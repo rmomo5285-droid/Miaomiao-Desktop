@@ -417,9 +417,6 @@
   <data name="menuOptionSetting" xml:space="preserve">
     <value>تنظیمات پارامتر</value>
   </data>
-  <data name="menuPromotion" xml:space="preserve">
-    <value>ترفیع</value>
-  </data>
   <data name="menuReload" xml:space="preserve">
     <value>بارگذاری مجدد</value>
   </data>
@@ -715,7 +712,7 @@
     <value>فعال کردن Mux Multiplexing</value>
   </data>
   <data name="TbSettingsN" xml:space="preserve">
-    <value>تنظیمات v2rayN</value>
+    <value>تنظیمات Miaomiao</value>
   </data>
   <data name="TbSettingsPass" xml:space="preserve">
     <value>مجوز احراز هویت</value>
@@ -1302,9 +1299,6 @@
   <data name="TbSettingsSrsFilesSource" xml:space="preserve">
     <value>منبع فایل های مجموعه قوانین sing-box (اختیاری)</value>
   </data>
-  <data name="UpgradeAppNotExistTip" xml:space="preserve">
-    <value>برنامه ارتقا وجود ندارد</value>
-  </data>
   <data name="TbSettingsRoutingRulesSource" xml:space="preserve">
     <value>منبع قوانین مسیریابی (اختیاری)</value>
   </data>
@@ -1753,7 +1747,7 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
     <value>PreSharedKey</value>
   </data>
   <data name="menuExport2InnerUri" xml:space="preserve">
-    <value>Export v2rayN Internal Share Link to Clipboard</value>
+    <value>Export Miaomiao internal share link to clipboard</value>
   </data>
   <data name="MsgCheckUpdateHasNewVersion" xml:space="preserve">
     <value>{0} has a new version available: {1}</value>

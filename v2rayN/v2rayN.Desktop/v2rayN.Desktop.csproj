@@ -5,7 +5,9 @@
 		<ApplicationIcon>Assets\v2rayN.ico</ApplicationIcon>
 		<BuiltInComInteropSupport>true</BuiltInComInteropSupport>
 		<AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-		<AssemblyName>v2rayN</AssemblyName>
+		<AssemblyName>Miaomiao</AssemblyName>
+		<Product>喵喵</Product>
+		<Title>喵喵</Title>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<CETCompat>false</CETCompat>
 	</PropertyGroup>

@@ -12,7 +12,12 @@ public partial class ThemeSettingView : ReactiveUserControl<ThemeSettingViewMode
         InitializeComponent();
         ViewModel = new ThemeSettingViewModel();
 
-        cmbCurrentTheme.ItemsSource = Utils.GetEnumNames<ETheme>();
+        cmbCurrentTheme.ItemsSource = new[]
+        {
+            nameof(ETheme.FollowSystem),
+            nameof(ETheme.Light),
+            nameof(ETheme.Dark)
+        };
         cmbCurrentFontSize.ItemsSource = Enumerable.Range(Global.MinFontSize, Global.MinFontSizeCount).ToList();
         cmbCurrentLanguage.ItemsSource = Global.Languages;
 

@@ -10,9 +10,13 @@
         <CheckForOverflowUnderflow>true</CheckForOverflowUnderflow>
         <Nullable>annotations</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
-        <Authors>2dust</Authors>
+        <Authors>Miaomiao contributors; 2dust and v2rayN contributors</Authors>
+        <Company>Miaomiao</Company>
+        <Product>Miaomiao</Product>
+        <RepositoryUrl>https://github.com/rmomo5285-droid/Miaomiao-Desktop</RepositoryUrl>
+        <Description>Miaomiao cross-platform network client</Description>
         <PackageLicenseExpression>GPL-3.0</PackageLicenseExpression>
-        <Copyright>Copyright © 2017-$([System.DateTime]::UtcNow.Year) $(Authors)</Copyright>
+        <Copyright>Copyright © 2017-$([System.DateTime]::UtcNow.Year) Miaomiao and v2rayN contributors</Copyright>
         <InvariantGlobalization>false</InvariantGlobalization>
     </PropertyGroup>
 

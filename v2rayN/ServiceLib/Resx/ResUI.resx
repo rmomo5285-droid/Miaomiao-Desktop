@@ -417,9 +417,6 @@
   <data name="menuOptionSetting" xml:space="preserve">
     <value>Option Setting</value>
   </data>
-  <data name="menuPromotion" xml:space="preserve">
-    <value>Promotion</value>
-  </data>
   <data name="menuReload" xml:space="preserve">
     <value>Reload</value>
   </data>
@@ -715,7 +712,7 @@
     <value>Turn on Mux Multiplexing</value>
   </data>
   <data name="TbSettingsN" xml:space="preserve">
-    <value>v2rayN settings</value>
+    <value>Miaomiao settings</value>
   </data>
   <data name="TbSettingsPass" xml:space="preserve">
     <value>Auth pass</value>
@@ -1308,9 +1305,6 @@
   <data name="TbSettingsSrsFilesSource" xml:space="preserve">
     <value>sing-box ruleset files source (optional)</value>
   </data>
-  <data name="UpgradeAppNotExistTip" xml:space="preserve">
-    <value>Upgrade App does not exist</value>
-  </data>
   <data name="TbSettingsRoutingRulesSource" xml:space="preserve">
     <value>Routing rules source (optional)</value>
   </data>
@@ -1762,7 +1756,7 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
     <value>PreSharedKey</value>
   </data>
   <data name="menuExport2InnerUri" xml:space="preserve">
-    <value>Export v2rayN Internal Share Link to Clipboard</value>
+    <value>Export Miaomiao internal share link to clipboard</value>
   </data>
   <data name="MsgCheckUpdateHasNewVersion" xml:space="preserve">
     <value>{0} has a new version available: {1}</value>
@@ -1828,7 +1822,7 @@ The "Get Certificate" action may fail if a self-signed certificate is used or if
     <value>Root Certificate Provider</value>
   </data>
   <data name="TbRootCertificateProviderTip" xml:space="preserve">
-    <value>Only applies to the v2rayN GUI's downloads and network requests. Does not affect the core's certificate validation.</value>
+    <value>Only applies to the Miaomiao GUI's downloads and network requests. Does not affect the core's certificate validation.</value>
   </data>
   <data name="TbProxyDialResolveStrategy" xml:space="preserve">
     <value>Proxy Dial Resolution Strategy</value>

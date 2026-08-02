@@ -10,73 +10,89 @@
     x:DataType="vms:StatusBarViewModel"
     Design.DataContext="{x:Static dd:DesignData.StatusBar}"
     mc:Ignorable="d">
-    <Grid>
-        <DockPanel Margin="{StaticResource Margin8}">
-            <StackPanel
-                Margin="{StaticResource MarginLr8}"
-                VerticalAlignment="Center"
-                DockPanel.Dock="Right">
-                <TextBlock x:Name="txtSpeedProxyDisplay" HorizontalAlignment="Right" />
-                <Border Margin="1" />
-                <TextBlock x:Name="txtSpeedDirectDisplay" HorizontalAlignment="Right" />
-            </StackPanel>
-
-            <StackPanel
-                Margin="{StaticResource MarginLr8}"
-                VerticalAlignment="Center"
-                DockPanel.Dock="Left">
-                <TextBlock x:Name="txtInboundDisplay" />
-                <Border Margin="1" />
-                <TextBlock x:Name="txtInboundLanDisplay" />
-            </StackPanel>
-
-            <StackPanel
-                x:Name="spEnableTun"
-                Margin="{StaticResource MarginLr8}"
-                VerticalAlignment="Center"
-                DockPanel.Dock="Left"
-                Orientation="Horizontal">
-                <TextBlock
-                    Margin="{StaticResource MarginLr8}"
+    <Grid Margin="18" RowDefinitions="Auto,Auto" RowSpacing="16">
+        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" ColumnSpacing="24">
+            <Grid Grid.Column="0" ColumnDefinitions="Auto,*" ColumnSpacing="12">
+                <Border
+                    Width="42"
+                    Height="42"
                     VerticalAlignment="Center"
-                    Text="{x:Static resx:ResUI.TbEnableTunAs}" />
-                <ToggleSwitch
-                    x:Name="togEnableTun"
-                    Margin="{StaticResource Margin4}"
-                    HorizontalAlignment="Center"
-                    Theme="{DynamicResource SimpleToggleSwitch}" />
-            </StackPanel>
+                    Background="{DynamicResource MiaomiaoPrimarySoftBrush}"
+                    CornerRadius="8">
+                    <PathIcon
+                        Width="21"
+                        Height="21"
+                        HorizontalAlignment="Center"
+                        VerticalAlignment="Center"
+                        Data="M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2M10,17L5,12L6.41,10.59L10,14.17L17.59,6.58L19,8L10,17Z"
+                        Foreground="{DynamicResource MiaomiaoPrimaryBrush}" />
+                </Border>
+                <StackPanel Grid.Column="1" VerticalAlignment="Center" Spacing="3">
+                    <TextBlock Classes="MiaomiaoMuted" FontSize="12" Text="当前节点" />
+                    <TextBlock
+                        x:Name="txtRunningServerDisplay"
+                        FontSize="15"
+                        FontWeight="SemiBold"
+                        TextTrimming="CharacterEllipsis" />
+                    <TextBlock
+                        x:Name="txtRunningInfoDisplay"
+                        Classes="MiaomiaoMuted"
+                        FontSize="12"
+                        TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </Grid>
 
-            <StackPanel
-                Margin="{StaticResource MarginLr8}"
-                VerticalAlignment="Center"
-                DockPanel.Dock="Left"
-                Orientation="Horizontal">
-                <ComboBox
-                    x:Name="cmbSystemProxy"
-                    Width="160"
-                    Margin="{StaticResource MarginLr8}"
-                    ToolTip.Tip="{x:Static resx:ResUI.menuSystemproxy}">
-                    <ComboBoxItem Content="{x:Static resx:ResUI.menuSystemProxyClear}" />
-                    <ComboBoxItem Content="{x:Static resx:ResUI.menuSystemProxySet}" />
-                    <ComboBoxItem Content="{x:Static resx:ResUI.menuSystemProxyNothing}" />
-                    <ComboBoxItem Content="{x:Static resx:ResUI.menuSystemProxyPac}" />
-                </ComboBox>
-
-                <ComboBox
-                    x:Name="cmbRoutings2"
-                    Width="160"
-                    Margin="{StaticResource MarginLr8}"
-                    DisplayMemberBinding="{Binding Remarks}"
-                    ItemsSource="{Binding RoutingItems}"
-                    ToolTip.Tip="{x:Static resx:ResUI.menuRouting}" />
+            <StackPanel Grid.Column="1" MinWidth="120" VerticalAlignment="Center" Spacing="4">
+                <TextBlock Classes="MiaomiaoMuted" FontSize="12" Text="实时流量" />
+                <TextBlock x:Name="txtSpeedProxyDisplay" FontWeight="SemiBold" />
+                <TextBlock x:Name="txtSpeedDirectDisplay" Classes="MiaomiaoMuted" FontSize="12" />
             </StackPanel>
+        </Grid>
 
-            <StackPanel Margin="{StaticResource MarginLr8}" VerticalAlignment="Center">
-                <TextBlock x:Name="txtRunningServerDisplay" />
-                <Border Margin="1" />
-                <TextBlock x:Name="txtRunningInfoDisplay" />
-            </StackPanel>
-        </DockPanel>
+        <Border
+            Grid.Row="1"
+            Padding="0,14,0,0"
+            BorderBrush="{DynamicResource MiaomiaoBorderBrush}"
+            BorderThickness="0,1,0,0">
+            <WrapPanel Orientation="Horizontal" VerticalAlignment="Center">
+                <StackPanel
+                    x:Name="spEnableTun"
+                    Margin="0,0,22,8"
+                    VerticalAlignment="Center"
+                    Orientation="Horizontal"
+                    Spacing="8">
+                    <TextBlock VerticalAlignment="Center" Text="TUN" />
+                    <ToggleSwitch
+                        x:Name="togEnableTun"
+                        HorizontalAlignment="Center"
+                        Theme="{DynamicResource SimpleToggleSwitch}" />
+                </StackPanel>
+
+                <StackPanel Margin="0,0,22,8" VerticalAlignment="Center" Orientation="Horizontal" Spacing="8">
+                    <TextBlock VerticalAlignment="Center" Classes="MiaomiaoMuted" Text="路由" />
+                    <ComboBox
+                        x:Name="cmbRoutings2"
+                        Width="190"
+                        DisplayMemberBinding="{Binding Remarks}"
+                        ItemsSource="{Binding RoutingItems}"
+                        ToolTip.Tip="{x:Static resx:ResUI.menuRouting}" />
+                </StackPanel>
+
+                <StackPanel Margin="0,0,22,8" VerticalAlignment="Center" Orientation="Horizontal" Spacing="8">
+                    <TextBlock VerticalAlignment="Center" Classes="MiaomiaoMuted" Text="系统代理" />
+                    <ComboBox x:Name="cmbSystemProxy" Width="180" ToolTip.Tip="{x:Static resx:ResUI.menuSystemproxy}">
+                        <ComboBoxItem Content="{x:Static resx:ResUI.menuSystemProxyClear}" />
+                        <ComboBoxItem Content="{x:Static resx:ResUI.menuSystemProxySet}" />
+                        <ComboBoxItem Content="{x:Static resx:ResUI.menuSystemProxyNothing}" />
+                        <ComboBoxItem Content="{x:Static resx:ResUI.menuSystemProxyPac}" />
+                    </ComboBox>
+                </StackPanel>
+
+                <StackPanel Margin="0,0,0,8" VerticalAlignment="Center" Orientation="Horizontal" Spacing="14">
+                    <TextBlock x:Name="txtInboundDisplay" Classes="MiaomiaoMuted" FontSize="12" TextTrimming="CharacterEllipsis" />
+                    <TextBlock x:Name="txtInboundLanDisplay" Classes="MiaomiaoMuted" FontSize="12" TextTrimming="CharacterEllipsis" />
+                </StackPanel>
+            </WrapPanel>
+        </Border>
     </Grid>
 </UserControl>

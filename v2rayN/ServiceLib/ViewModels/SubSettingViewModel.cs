@@ -24,7 +24,9 @@ public partial class SubSettingViewModel : MyReactiveObject
 
         var canEditRemove = this.WhenAnyValue(
            x => x.SelectedSource,
-           selectedSource => selectedSource != null && !selectedSource.Id.IsNullOrEmpty());
+           selectedSource => selectedSource != null
+               && !selectedSource.Id.IsNullOrEmpty()
+               && !MiaomiaoManagedSubscriptionPolicy.IsManaged(selectedSource));
 
         SubAddCmd = ReactiveCommand.CreateFromTask(async () =>
         {
@@ -56,7 +58,8 @@ public partial class SubSettingViewModel : MyReactiveObject
     public async Task RefreshSubItems()
     {
         SubItems.Clear();
-        SubItems.AddRange(await AppManager.Instance.SubItems());
+        SubItems.AddRange((await AppManager.Instance.SubItems())
+            .Where(item => !MiaomiaoManagedSubscriptionPolicy.IsManaged(item)));
     }
 
     public async Task EditSubAsync(bool blNew)
@@ -69,7 +72,7 @@ public partial class SubSettingViewModel : MyReactiveObject
         else
         {
             item = await AppManager.Instance.GetSubItem(SelectedSource?.Id);
-            if (item is null)
+            if (item is null || MiaomiaoManagedSubscriptionPolicy.IsManaged(item))
             {
                 return;
             }
@@ -89,7 +92,14 @@ public partial class SubSettingViewModel : MyReactiveObject
             return;
         }
 
-        foreach (var it in SelectedSources ?? [SelectedSource])
+        var deletable = (SelectedSources ?? [SelectedSource])
+            .Where(item => !MiaomiaoManagedSubscriptionPolicy.IsManaged(item))
+            .ToList();
+        if (deletable.Count == 0)
+        {
+            return;
+        }
+        foreach (var it in deletable)
         {
             await ConfigHandler.DeleteSubItem(_config, it.Id);
         }

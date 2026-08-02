@@ -19,7 +19,7 @@
         </Style>
     </UserControl.Styles>
 
-    <Button Margin="{StaticResource MarginLr8}" Classes="IconButton">
+    <Button Margin="{StaticResource MarginLr8}" Classes="IconButton" ToolTip.Tip="外观与语言">
         <Button.Content>
             <PathIcon Data="{StaticResource SemiIconMore}">
                 <PathIcon.RenderTransform>

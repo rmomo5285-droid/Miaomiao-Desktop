@@ -18,8 +18,8 @@ body:
   - type: input
     id: "os-version"
     attributes:
-      label: "操作系统 / v2rayN / Core 版本"
-      description: "操作系统 / v2rayN / Core 版本"
+      label: "操作系统 / 喵喵 / 内核版本"
+      description: "填写操作系统、喵喵客户端和所用内核版本。"
     validations:
       required: true
 

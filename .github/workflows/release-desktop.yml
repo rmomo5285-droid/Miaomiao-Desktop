@@ -1,0 +1,636 @@
+name: Miaomiao desktop release
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Stable release tag, for example v1.2.3
+        required: true
+        type: string
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: miaomiao-desktop-release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_SDK_VERSION: 10.0.100
+  DESKTOP_PROJECT: ./v2rayN/v2rayN.Desktop/v2rayN.Desktop.csproj
+  HELPER_PROJECT: ./v2rayN/AmazTool/AmazTool.csproj
+
+jobs:
+  validate:
+    name: Validate source and tests
+    runs-on: ubuntu-24.04
+    outputs:
+      release_tag: ${{ steps.release.outputs.release_tag }}
+      version: ${{ steps.release.outputs.version }}
+    steps:
+      - name: Checkout exact workflow commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Verify checkout and release tag
+        id: release
+        shell: bash
+        env:
+          REQUESTED_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          actual="$(git rev-parse HEAD)"
+          [[ "$actual" == "$GITHUB_SHA" ]] || {
+            echo "Checkout mismatch: expected $GITHUB_SHA, got $actual" >&2
+            exit 1
+          }
+          if git submodule status --recursive | grep -Eq '^[+-]'; then
+            echo "A submodule is missing or not at the commit recorded by $GITHUB_SHA." >&2
+            exit 1
+          fi
+
+          tag="$REQUESTED_TAG"
+          [[ "$tag" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]] || {
+            echo "Release tag must be a stable semantic version such as v1.2.3." >&2
+            exit 1
+          }
+          if git show-ref --verify --quiet "refs/tags/$tag"; then
+            tag_commit="$(git rev-list -n 1 "$tag")"
+            [[ "$tag_commit" == "$GITHUB_SHA" ]] || {
+              echo "Existing tag $tag points to $tag_commit, not $GITHUB_SHA." >&2
+              exit 1
+            }
+          fi
+          printf 'release_tag=%s\n' "$tag" >> "$GITHUB_OUTPUT"
+          printf 'version=%s\n' "${tag#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up pinned .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+
+      - name: Run service tests
+        run: dotnet test ./v2rayN/ServiceLib.Tests/ServiceLib.Tests.csproj -c Release
+
+  windows:
+    name: Windows ${{ matrix.arch }}
+    needs: validate
+    runs-on: windows-2025
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            rid: win-x64
+            core_target: windows-x64
+          - arch: arm64
+            rid: win-arm64
+            core_target: windows-arm64
+    steps:
+      - name: Checkout exact workflow commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Verify checkout
+        shell: pwsh
+        run: |
+          $actual = (git rev-parse HEAD).Trim()
+          if ($actual -ne $env:GITHUB_SHA) {
+            throw "Checkout mismatch: expected $env:GITHUB_SHA, got $actual"
+          }
+
+      - name: Set up pinned .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+
+      - name: Publish Miaomiao
+        shell: pwsh
+        env:
+          RID: ${{ matrix.rid }}
+          ARCH: ${{ matrix.arch }}
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $output = Join-Path $env:GITHUB_WORKSPACE "stage/Miaomiao-windows-$env:ARCH"
+          New-Item -ItemType Directory -Force -Path $output | Out-Null
+          dotnet restore $env:DESKTOP_PROJECT -r $env:RID
+          dotnet publish $env:DESKTOP_PROJECT -c Release -r $env:RID `
+            -p:SelfContained=true -p:EnableWindowsTargeting=true `
+            -p:Version=$env:VERSION -p:DebugType=None -p:DebugSymbols=false -o $output
+          dotnet publish $env:HELPER_PROJECT -c Release -r $env:RID `
+            -p:SelfContained=true -p:PublishTrimmed=true `
+            -p:EnableWindowsTargeting=true -p:Version=$env:VERSION -p:DebugType=None `
+            -p:DebugSymbols=false -o $output
+          if (-not (Test-Path (Join-Path $output 'Miaomiao.exe'))) {
+            throw 'The branded Miaomiao.exe executable was not produced.'
+          }
+          if (-not (Test-Path (Join-Path $output 'MiaomiaoHelper.exe'))) {
+            throw 'The branded MiaomiaoHelper.exe executable was not produced.'
+          }
+          Get-ChildItem -LiteralPath $output -Recurse -Filter '*.pdb' | Remove-Item -Force
+          Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'LICENSE') `
+            -Destination (Join-Path $output 'LICENSE')
+          Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'packaging/core-bundles.lock.tsv') `
+            -Destination (Join-Path $output 'CORE-BUNDLES.lock.tsv')
+          Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'THIRD_PARTY_NOTICES.md') `
+            -Destination (Join-Path $output 'THIRD_PARTY_NOTICES.md')
+          Copy-Item -LiteralPath (Join-Path $env:GITHUB_WORKSPACE 'packaging/licenses') `
+            -Destination (Join-Path $output 'licenses') -Recurse
+          Set-Content -LiteralPath (Join-Path $output 'SOURCE-COMMIT') `
+            -Value $env:GITHUB_SHA -Encoding ascii
+          Set-Content -LiteralPath (Join-Path $output 'SOURCE-URL') `
+            -Value "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/tree/$env:GITHUB_SHA" -Encoding ascii
+          Set-Content -LiteralPath (Join-Path $output 'NotStoreConfigHere.txt') `
+            -Value 'Miaomiao stores user configuration outside this application directory.' `
+            -Encoding ascii
+
+      - name: Stage verified core bundle
+        shell: bash
+        env:
+          CORE_TARGET: ${{ matrix.core_target }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          source packaging/pinned-core-bundle.sh
+          output="$GITHUB_WORKSPACE/stage/Miaomiao-windows-$ARCH"
+          miaomiao_stage_pinned_core_bundle "$CORE_TARGET" "$output"
+          [[ -x "$output/bin/sing_box/sing-box.exe" || -f "$output/bin/sing_box/sing-box.exe" ]] || {
+            echo "Pinned bundle does not contain sing-box.exe." >&2
+            exit 1
+          }
+
+      - name: Authenticode sign Miaomiao executables
+        shell: pwsh
+        env:
+          CERT_PFX_BASE64: ${{ secrets.MIAOMIAO_WINDOWS_CERT_PFX_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.MIAOMIAO_WINDOWS_CERT_PASSWORD }}
+          CERT_SHA256: ${{ secrets.MIAOMIAO_WINDOWS_CERT_SHA256 }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ([string]::IsNullOrWhiteSpace($env:CERT_PFX_BASE64) -or
+              [string]::IsNullOrWhiteSpace($env:CERT_PASSWORD) -or
+              [string]::IsNullOrWhiteSpace($env:CERT_SHA256)) {
+            throw 'Miaomiao Windows signing secrets are required.'
+          }
+
+          $pfxPath = Join-Path $env:RUNNER_TEMP 'miaomiao-release.pfx'
+          $bytes = [Convert]::FromBase64String(($env:CERT_PFX_BASE64 -replace '\s', ''))
+          [IO.File]::WriteAllBytes($pfxPath, $bytes)
+          $password = ConvertTo-SecureString $env:CERT_PASSWORD -AsPlainText -Force
+          $pfxData = Get-PfxData -FilePath $pfxPath -Password $password
+          $cert = @($pfxData.EndEntityCertificates)[0]
+          if (-not $cert) { throw 'The PFX does not contain an end-entity signing certificate.' }
+          $expected = ($env:CERT_SHA256 -replace '[^0-9A-Fa-f]', '').ToUpperInvariant()
+          if ($expected -notmatch '^[0-9A-F]{64}$') {
+            throw 'MIAOMIAO_WINDOWS_CERT_SHA256 must contain one SHA-256 fingerprint.'
+          }
+          $actual = $cert.GetCertHashString('SHA256').ToUpperInvariant()
+          if ($actual -ne $expected) {
+            throw "Windows certificate SHA-256 mismatch: expected $expected, got $actual"
+          }
+          if ($cert.Subject -notmatch '(?i)Miaomiao') {
+            throw "The Windows publisher certificate is not branded Miaomiao: $($cert.Subject)"
+          }
+
+          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" |
+            Sort-Object FullName -Descending | Select-Object -First 1
+          if (-not $signtool) { throw 'signtool.exe was not found.' }
+          $root = Join-Path $env:GITHUB_WORKSPACE "stage/Miaomiao-windows-$env:ARCH"
+          $ownedExecutables = @(
+            (Join-Path $root 'Miaomiao.exe'),
+            (Join-Path $root 'MiaomiaoHelper.exe')
+          ) | Where-Object { Test-Path -LiteralPath $_ }
+          if ($ownedExecutables.Count -eq 0) { throw 'No Miaomiao executable was found to sign.' }
+
+          foreach ($file in $ownedExecutables) {
+            & $signtool.FullName sign /f $pfxPath /p $env:CERT_PASSWORD /fd SHA256 `
+              /tr http://timestamp.digicert.com /td SHA256 $file
+            if ($LASTEXITCODE -ne 0) { throw "signtool failed for $file" }
+            & $signtool.FullName verify /pa /all /v $file
+            if ($LASTEXITCODE -ne 0) { throw "Authenticode verification failed for $file" }
+            $signature = Get-AuthenticodeSignature -LiteralPath $file
+            $signedHash = $signature.SignerCertificate.GetCertHashString('SHA256').ToUpperInvariant()
+            if ($signature.Status -ne 'Valid' -or $signedHash -ne $expected) {
+              throw "Unexpected Authenticode signer or status for $file"
+            }
+            if (-not $signature.TimeStamperCertificate) {
+              throw "Authenticode timestamp is missing for $file"
+            }
+          }
+
+      - name: Remove temporary Windows signing certificate
+        if: always()
+        shell: pwsh
+        run: |
+          $pfxPath = Join-Path $env:RUNNER_TEMP 'miaomiao-release.pfx'
+          if (Test-Path -LiteralPath $pfxPath) {
+            Remove-Item -LiteralPath $pfxPath -Force
+          }
+
+      - name: Create Windows archive
+        shell: pwsh
+        env:
+          ARCH: ${{ matrix.arch }}
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:GITHUB_WORKSPACE "stage/Miaomiao-windows-$env:ARCH"
+          $archive = Join-Path $env:GITHUB_WORKSPACE "Miaomiao-$env:VERSION-windows-$env:ARCH.zip"
+          Compress-Archive -Path (Join-Path $root '*') -DestinationPath $archive -CompressionLevel Fastest
+          if (-not (Test-Path -LiteralPath $archive)) { throw 'Windows archive was not created.' }
+
+      - name: Upload Windows artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: miaomiao-windows-${{ matrix.arch }}
+          path: Miaomiao-*-windows-${{ matrix.arch }}.zip
+          if-no-files-found: error
+          retention-days: 14
+
+  macos:
+    name: macOS ${{ matrix.arch }}
+    needs: validate
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            rid: osx-x64
+            core_target: macos-x64
+          - arch: arm64
+            rid: osx-arm64
+            core_target: macos-arm64
+    steps:
+      - name: Checkout exact workflow commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Verify checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
+
+      - name: Set up pinned .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+
+      - name: Publish Miaomiao
+        shell: bash
+        env:
+          RID: ${{ matrix.rid }}
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          set -euo pipefail
+          output="$GITHUB_WORKSPACE/stage/publish"
+          mkdir -p "$output"
+          dotnet restore "$DESKTOP_PROJECT" -r "$RID"
+          dotnet publish "$DESKTOP_PROJECT" -c Release -r "$RID" \
+            -p:SelfContained=true -p:Version="$VERSION" \
+            -p:DebugType=None -p:DebugSymbols=false -o "$output"
+          dotnet publish "$HELPER_PROJECT" -c Release -r "$RID" \
+            -p:SelfContained=true -p:PublishTrimmed=true \
+            -p:Version="$VERSION" -p:DebugType=None -p:DebugSymbols=false -o "$output"
+          [[ -f "$output/Miaomiao" ]] || {
+            echo "The branded Miaomiao executable was not produced." >&2
+            exit 1
+          }
+          [[ -f "$output/MiaomiaoHelper" ]] || {
+            echo "The branded MiaomiaoHelper executable was not produced." >&2
+            exit 1
+          }
+          find "$output" -type f -name '*.pdb' -delete
+          install -m 0644 ./LICENSE "$output/LICENSE"
+          install -m 0644 ./packaging/core-bundles.lock.tsv "$output/CORE-BUNDLES.lock.tsv"
+          install -m 0644 ./THIRD_PARTY_NOTICES.md "$output/THIRD_PARTY_NOTICES.md"
+          cp -a ./packaging/licenses "$output/licenses"
+          printf '%s\n' "$GITHUB_SHA" > "$output/SOURCE-COMMIT"
+          printf '%s/%s/tree/%s\n' "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_SHA" \
+            > "$output/SOURCE-URL"
+
+      - name: Stage verified core bundle
+        shell: bash
+        env:
+          CORE_TARGET: ${{ matrix.core_target }}
+        run: |
+          set -euo pipefail
+          source packaging/pinned-core-bundle.sh
+          miaomiao_stage_pinned_core_bundle "$CORE_TARGET" "$GITHUB_WORKSPACE/stage/publish"
+          [[ -f "$GITHUB_WORKSPACE/stage/publish/bin/sing_box/sing-box" ]] || {
+            echo "Pinned bundle does not contain sing-box." >&2
+            exit 1
+          }
+
+      - name: Assemble Miaomiao application bundle
+        shell: bash
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          set -euo pipefail
+          app="$GITHUB_WORKSPACE/stage/Miaomiao.app"
+          mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
+          cp -a "$GITHUB_WORKSPACE/stage/publish/." "$app/Contents/MacOS/"
+          chmod 0755 "$app/Contents/MacOS/Miaomiao"
+          printf '%s\n' 'Miaomiao stores user configuration outside this application bundle.' \
+            > "$app/Contents/MacOS/NotStoreConfigHere.txt"
+          install -m 0644 ./v2rayN/v2rayN.Desktop/v2rayN.icns \
+            "$app/Contents/Resources/Miaomiao.icns"
+          cat > "$app/Contents/Info.plist" <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleDevelopmentRegion</key><string>zh_CN</string>
+            <key>CFBundleDisplayName</key><string>Miaomiao</string>
+            <key>CFBundleExecutable</key><string>Miaomiao</string>
+            <key>CFBundleIconFile</key><string>Miaomiao.icns</string>
+            <key>CFBundleIdentifier</key><string>com.miaomiao.client.desktop</string>
+            <key>CFBundleName</key><string>Miaomiao</string>
+            <key>CFBundlePackageType</key><string>APPL</string>
+            <key>CFBundleShortVersionString</key><string>$VERSION</string>
+            <key>CFBundleVersion</key><string>$VERSION</string>
+            <key>LSMinimumSystemVersion</key><string>13.7</string>
+            <key>NSHighResolutionCapable</key><true/>
+          </dict>
+          </plist>
+          PLIST
+          plutil -lint "$app/Contents/Info.plist"
+
+      - name: Sign, notarize, and staple macOS disk image
+        shell: bash
+        env:
+          CERT_P12_BASE64: ${{ secrets.MIAOMIAO_MACOS_CERT_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.MIAOMIAO_MACOS_CERT_PASSWORD }}
+          SIGN_IDENTITY: ${{ secrets.MIAOMIAO_MACOS_SIGN_IDENTITY }}
+          NOTARY_APPLE_ID: ${{ secrets.MIAOMIAO_MACOS_NOTARY_APPLE_ID }}
+          NOTARY_TEAM_ID: ${{ secrets.MIAOMIAO_MACOS_NOTARY_TEAM_ID }}
+          NOTARY_PASSWORD: ${{ secrets.MIAOMIAO_MACOS_NOTARY_APP_PASSWORD }}
+          VERSION: ${{ needs.validate.outputs.version }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          for value in CERT_P12_BASE64 CERT_PASSWORD SIGN_IDENTITY NOTARY_APPLE_ID NOTARY_TEAM_ID NOTARY_PASSWORD; do
+            [[ -n "${!value:-}" ]] || { echo "Missing macOS signing secret: $value" >&2; exit 1; }
+          done
+          printf '%s' "$SIGN_IDENTITY" | grep -Fqi Miaomiao || {
+            echo 'MIAOMIAO_MACOS_SIGN_IDENTITY must be a Miaomiao-branded Developer ID identity.' >&2
+            exit 1
+          }
+
+          keychain="$RUNNER_TEMP/miaomiao-signing.keychain-db"
+          keychain_password="$(openssl rand -hex 32)"
+          cert="$RUNNER_TEMP/miaomiao-release.p12"
+          printf '%s' "$CERT_P12_BASE64" | base64 -D > "$cert"
+          security create-keychain -p "$keychain_password" "$keychain"
+          printf 'MIAOMIAO_KEYCHAIN=%s\n' "$keychain" >> "$GITHUB_ENV"
+          printf 'MIAOMIAO_CERT_PATH=%s\n' "$cert" >> "$GITHUB_ENV"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$cert" -k "$keychain" -P "$CERT_PASSWORD" \
+            -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple:,codesign: \
+            -s -k "$keychain_password" "$keychain"
+          security list-keychains -d user -s "$keychain"
+          security find-identity -v -p codesigning "$keychain" | grep -F "$SIGN_IDENTITY"
+
+          app="$GITHUB_WORKSPACE/stage/Miaomiao.app"
+          while IFS= read -r -d '' file_path; do
+            if file -b "$file_path" | grep -q 'Mach-O'; then
+              codesign --force --options runtime --timestamp \
+                --keychain "$keychain" --sign "$SIGN_IDENTITY" "$file_path"
+            fi
+          done < <(find "$app/Contents/MacOS" -type f -print0)
+          codesign --force --options runtime --timestamp --keychain "$keychain" \
+            --sign "$SIGN_IDENTITY" "$app"
+          codesign --verify --deep --strict --verbose=2 "$app"
+
+          payload="$GITHUB_WORKSPACE/stage/dmg"
+          mkdir -p "$payload"
+          cp -a "$app" "$payload/Miaomiao.app"
+          ln -s /Applications "$payload/Applications"
+          dmg="$GITHUB_WORKSPACE/Miaomiao-$VERSION-macos-$ARCH.dmg"
+          hdiutil create -volname Miaomiao -srcfolder "$payload" -format UDZO "$dmg"
+          codesign --force --timestamp --keychain "$keychain" \
+            --sign "$SIGN_IDENTITY" "$dmg"
+          codesign --verify --strict --verbose=2 "$dmg"
+          xcrun notarytool submit "$dmg" --apple-id "$NOTARY_APPLE_ID" \
+            --team-id "$NOTARY_TEAM_ID" --password "$NOTARY_PASSWORD" --wait
+          xcrun stapler staple "$dmg"
+          xcrun stapler validate "$dmg"
+
+      - name: Remove temporary signing keychain
+        if: always()
+        shell: bash
+        run: |
+          if [[ -n "${MIAOMIAO_KEYCHAIN:-}" && -f "$MIAOMIAO_KEYCHAIN" ]]; then
+            security delete-keychain "$MIAOMIAO_KEYCHAIN"
+          fi
+          if [[ -n "${MIAOMIAO_CERT_PATH:-}" ]]; then
+            rm -f "$MIAOMIAO_CERT_PATH"
+          fi
+
+      - name: Upload macOS artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: miaomiao-macos-${{ matrix.arch }}
+          path: Miaomiao-*-macos-${{ matrix.arch }}.dmg
+          if-no-files-found: error
+          retention-days: 14
+
+  linux-deb:
+    name: Linux DEB ${{ matrix.arch }}
+    needs: validate
+    runs-on: ${{ matrix.runner }}
+    container: ubuntu:22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            deb_arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            deb_arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - name: Checkout exact workflow commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up pinned .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+
+      - name: Build verified DEB packages
+        shell: bash
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
+          chmod 0755 packaging/*.sh
+          ./packaging/package-linux-deb.sh standard "$VERSION" --arch "$ARCH"
+          mkdir -p dist
+          cp "$HOME"/debbuild/miaomiao_"$VERSION"_*.deb dist/
+
+      - name: Upload DEB artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: miaomiao-linux-deb-${{ matrix.arch }}
+          path: dist/miaomiao_*_${{ matrix.deb_arch }}.deb
+          if-no-files-found: error
+          retention-days: 14
+
+  linux-rpm:
+    name: Linux RPM ${{ matrix.arch }}
+    needs: validate
+    runs-on: ${{ matrix.runner }}
+    container: ubuntu:22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            rpm_arch: x86_64
+            runner: ubuntu-24.04
+          - arch: arm64
+            rpm_arch: aarch64
+            runner: ubuntu-24.04-arm
+    steps:
+      - name: Checkout exact workflow commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up pinned .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+
+      - name: Build verified RPM packages
+        shell: bash
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+          ARCH: ${{ matrix.arch }}
+        run: |
+          set -euo pipefail
+          [[ "$(git rev-parse HEAD)" == "$GITHUB_SHA" ]]
+          chmod 0755 packaging/*.sh
+          ./packaging/package-linux-rpm.sh standard "$VERSION" --arch "$ARCH"
+          mkdir -p dist
+          find "$HOME/rpmbuild/RPMS" -type f -name "miaomiao-$VERSION-1*.rpm" \
+            -exec cp {} dist/ \;
+          compgen -G 'dist/*.rpm' >/dev/null
+
+      - name: Upload RPM artifacts
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: miaomiao-linux-rpm-${{ matrix.arch }}
+          path: dist/miaomiao-*.${{ matrix.rpm_arch }}.rpm
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Publish signed release
+    needs: [validate, windows, macos, linux-deb, linux-rpm]
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Download all platform artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: miaomiao-*
+          path: dist
+          merge-multiple: true
+
+      - name: Create checksums and detached signatures
+        shell: bash
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.MIAOMIAO_RELEASE_GPG_PRIVATE_KEY }}
+          EXPECTED_FINGERPRINT: ${{ secrets.MIAOMIAO_RELEASE_GPG_FINGERPRINT }}
+          GPG_PASSPHRASE: ${{ secrets.MIAOMIAO_RELEASE_GPG_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          [[ -n "$GPG_PRIVATE_KEY" && -n "$EXPECTED_FINGERPRINT" && -n "$GPG_PASSPHRASE" ]] || {
+            echo 'Miaomiao release GPG key, fingerprint, and passphrase secrets are required.' >&2
+            exit 1
+          }
+          cd dist
+          compgen -G 'Miaomiao-*' >/dev/null || {
+            echo 'No Miaomiao release files were downloaded.' >&2
+            exit 1
+          }
+          if find . -maxdepth 1 -type f -iname '*v2rayn*' | grep -q .; then
+            echo 'An upstream-branded release filename was produced.' >&2
+            exit 1
+          fi
+          sha256sum Miaomiao-* miaomiao_* miaomiao-*.rpm 2>/dev/null | sort -k2 > SHA256SUMS
+          gpg_home="$RUNNER_TEMP/miaomiao-gnupg"
+          passphrase_file="$RUNNER_TEMP/miaomiao-gpg-passphrase"
+          umask 077
+          install -m 700 -d "$gpg_home"
+          printf '%s' "$GPG_PASSPHRASE" > "$passphrase_file"
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --homedir "$gpg_home" --batch --import
+          key="$(gpg --homedir "$gpg_home" --batch --with-colons --list-secret-keys | awk -F: '/^fpr:/{print $10; exit}')"
+          expected="$(printf '%s' "$EXPECTED_FINGERPRINT" | tr -d ' :' | tr '[:lower:]' '[:upper:]')"
+          [[ "$expected" =~ ^[0-9A-F]{40}$|^[0-9A-F]{64}$ ]]
+          [[ -n "$key" && "$key" == "$expected" ]]
+          gpg --homedir "$gpg_home" --batch --list-keys "$key" | grep -Fqi Miaomiao || {
+            echo 'The release GPG identity is not branded Miaomiao.' >&2
+            exit 1
+          }
+          gpg --homedir "$gpg_home" --batch --yes --pinentry-mode loopback \
+            --passphrase-file "$passphrase_file" --armor --local-user "$key" --detach-sign SHA256SUMS
+          while IFS= read -r file; do
+            gpg --homedir "$gpg_home" --batch --yes --pinentry-mode loopback \
+              --passphrase-file "$passphrase_file" --armor --local-user "$key" --detach-sign "$file"
+          done < <(awk '{print $2}' SHA256SUMS)
+          gpg --homedir "$gpg_home" --armor --export "$key" > miaomiao-release-public-key.asc
+
+      - name: Remove temporary GPG material
+        if: always()
+        shell: bash
+        run: rm -rf "$RUNNER_TEMP/miaomiao-gnupg" "$RUNNER_TEMP/miaomiao-gpg-passphrase"
+
+      - name: Create or update GitHub release at this commit
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ needs.validate.outputs.release_tag }}
+        run: |
+          set -euo pipefail
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --target "$GITHUB_SHA" \
+              --title "Miaomiao $RELEASE_TAG" --generate-notes
+          fi
+          gh release upload "$RELEASE_TAG" dist/* --clobber

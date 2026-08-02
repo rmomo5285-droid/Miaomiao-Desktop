@@ -818,10 +818,10 @@ public class Utils
 
     #region Miscellaneous
 
-    public static bool UpgradeAppExists(out string upgradeFileName)
+    public static bool RestartHelperExists(out string helperFileName)
     {
-        upgradeFileName = Path.Combine(GetBaseDirectory(), GetExeName("AmazTool"));
-        return File.Exists(upgradeFileName);
+        helperFileName = Path.Combine(GetBaseDirectory(), GetExeName("MiaomiaoHelper"));
+        return File.Exists(helperFileName);
     }
 
     /// <summary>
@@ -1084,7 +1084,7 @@ public class Utils
     {
         if (Environment.GetEnvironmentVariable(Global.LocalAppData) == "1")
         {
-            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "v2rayN");
+            return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), Global.AppName);
         }
 
         return GetBaseDirectory();
@@ -1278,17 +1278,17 @@ public class Utils
                 return false;
             }
 
-            if (p.StartsWith("/opt/v2rayN", StringComparison.OrdinalIgnoreCase))
+            if (p.StartsWith("/opt/miaomiao", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
 
-            if (p.StartsWith("/usr/lib/v2rayN", StringComparison.OrdinalIgnoreCase))
+            if (p.StartsWith("/usr/lib/miaomiao", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }
 
-            if (p.StartsWith("/usr/share/v2rayN", StringComparison.OrdinalIgnoreCase))
+            if (p.StartsWith("/usr/share/miaomiao", StringComparison.OrdinalIgnoreCase))
             {
                 return true;
             }

@@ -1,5 +1,6 @@
 using Avalonia.Controls.Notifications;
 using DialogHostAvalonia;
+using ServiceLib.Services;
 using v2rayN.Desktop.Base;
 using v2rayN.Desktop.Common;
 using v2rayN.Desktop.Manager;
@@ -11,9 +12,11 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
     private static Config _config;
     private readonly SingleReplaceableDisposable _layoutBindingsDisposable = new();
     private readonly WindowNotificationManager? _manager;
-    private CheckUpdateView? _checkUpdateView;
+    private readonly SemaphoreSlim _miaomiaoMigrationPromptGate = new(1, 1);
+    private readonly HashSet<long> _shownMiaomiaoMigrationVersions = [];
     private BackupAndRestoreView? _backupAndRestoreView;
     private bool _blCloseByUser = false;
+    private bool _isWindowOpened;
 
     public MainWindow()
     {
@@ -23,14 +26,15 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         _manager = new WindowNotificationManager(TopLevel.GetTopLevel(this)) { MaxItems = 3, Position = NotificationPosition.TopRight };
 
         KeyDown += MainWindow_KeyDown;
-        menuSettingsSetUWP.Click += MenuSettingsSetUWP_Click;
-        menuPromotion.Click += MenuPromotion_Click;
-        menuCheckUpdate.Click += MenuCheckUpdate_Click;
-        btnNewUpdate.Click += MenuCheckUpdate_Click;
+        Opened += MainWindow_Opened;
+        Activated += MainWindow_Activated;
         menuBackupAndRestore.Click += MenuBackupAndRestore_Click;
         menuClose.Click += MenuClose_Click;
+        btnBackup.Click += MenuBackupAndRestore_Click;
 
         conTheme.Content ??= new ThemeSettingView();
+        contentAccount.Content ??= new MiaomiaoAccountView();
+        txtVersion.Text = Utils.GetVersion();
 
         this.WhenActivated(disposables =>
         {
@@ -62,21 +66,25 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
 
             //setting
             this.BindCommand(ViewModel, vm => vm.OptionSettingCmd, v => v.menuOptionSetting).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.OptionSettingCmd, v => v.btnOptions).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.RoutingSettingCmd, v => v.menuRoutingSetting).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.RoutingSettingCmd, v => v.btnRouting).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.DNSSettingCmd, v => v.menuDNSSetting).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.DNSSettingCmd, v => v.btnDns).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.FullConfigTemplateCmd, v => v.menuFullConfigTemplate).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.GlobalHotkeySettingCmd, v => v.menuGlobalHotkeySetting).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.RebootAsAdminCmd, v => v.menuRebootAsAdmin).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.ClearServerStatisticsCmd, v => v.menuClearServerStatistics).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.OpenTheFileLocationCmd, v => v.menuOpenTheFileLocation).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.OpenTheFileLocationCmd, v => v.btnOpenFolder).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.SubSettingCmd, v => v.btnSubscriptionSetting).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.SubUpdateCmd, v => v.btnQuickRefresh).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.RegionalPresetDefaultCmd, v => v.menuRegionalPresetsDefault).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.RegionalPresetRussiaCmd, v => v.menuRegionalPresetsRussia).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.RegionalPresetIranCmd, v => v.menuRegionalPresetsIran).DisposeWith(disposables);
 
             this.BindCommand(ViewModel, vm => vm.ReloadCmd, v => v.menuReload).DisposeWith(disposables);
             this.OneWayBind(ViewModel, vm => vm.BlReloadEnabled, v => v.menuReload.IsEnabled).DisposeWith(disposables);
-            this.OneWayBind(ViewModel, vm => vm.BlNewUpdate, v => v.btnNewUpdate.IsVisible).DisposeWith(disposables);
-
             this.OneWayBind(ViewModel, vm => vm.StatusBarViewModel, v => v.contentStatusBarView.Content).DisposeWith(disposables);
 
             _layoutBindingsDisposable.DisposeWith(disposables);
@@ -119,6 +127,12 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
               .Subscribe(async content => await DelegateSnackMsg(content))
               .DisposeWith(disposables);
 
+            AppEvents.MiaomiaoManifestUpdated
+              .AsObservable()
+              .ObserveOn(RxSchedulers.MainThreadScheduler)
+              .Subscribe(_manifestResult => _ = ShowMiaomiaoMigrationNoticeAsync())
+              .DisposeWith(disposables);
+
             AppEvents.AppExitRequested
               .AsObservable()
               .ObserveOn(RxSchedulers.MainThreadScheduler)
@@ -134,7 +148,7 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
 
         if (Utils.IsWindows())
         {
-            Title = $"{Utils.GetVersion()} - {(Utils.IsAdministrator() ? ResUI.RunAsAdmin : ResUI.NotRunAsAdmin)}";
+            Title = $"喵喵 {Utils.GetVersion()} - {(Utils.IsAdministrator() ? ResUI.RunAsAdmin : ResUI.NotRunAsAdmin)}";
 
             if (!Design.IsDesignMode)
             {
@@ -144,7 +158,7 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         }
         else
         {
-            Title = $"{Utils.GetVersion()}";
+            Title = $"喵喵 {Utils.GetVersion()}";
             menuAddServerViaScan.IsVisible = false;
         }
 
@@ -153,10 +167,62 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
             WindowState = WindowState.Minimized;
         }
 
-        AddHelpMenuItem();
     }
 
     #region Event
+
+    private async void MainWindow_Opened(object? sender, EventArgs e)
+    {
+        _isWindowOpened = true;
+        Opened -= MainWindow_Opened;
+        await ShowMiaomiaoMigrationNoticeAsync();
+    }
+
+    private async void MainWindow_Activated(object? sender, EventArgs e)
+    {
+        if (contentAccount.Content is MiaomiaoAccountView { ViewModel: { } accountViewModel })
+        {
+            await accountViewModel.OnWindowActivatedAsync();
+        }
+    }
+
+    private async Task ShowMiaomiaoMigrationNoticeAsync()
+    {
+        if (!_isWindowOpened)
+        {
+            return;
+        }
+
+        await _miaomiaoMigrationPromptGate.WaitAsync();
+        try
+        {
+            var endpointService = MiaomiaoEndpointManifestService.Instance;
+            var payload = endpointService.GetCurrent();
+            if (payload.MigrationNotice is not { } notice
+                || !endpointService.ShouldPrompt(payload)
+                || !_shownMiaomiaoMigrationVersions.Add(payload.Version))
+            {
+                return;
+            }
+
+            ShowHideWindow(true);
+            var primaryHost = new Uri(payload.ApiEndpoints[0]).Host;
+            var importance = notice.Required ? "重要通知\n\n" : string.Empty;
+            var message = $"{importance}{notice.Title}\n\n{notice.Message}\n\n服务入口已由签名配置自动更新为：{primaryHost}\n本地节点和订阅缓存不会被清除。";
+            if (await UI.ShowYesNo(message) == ButtonResult.Yes)
+            {
+                await endpointService.AcknowledgeMigrationAsync(payload.Version);
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("Show Miaomiao migration notice", ex);
+        }
+        finally
+        {
+            _miaomiaoMigrationPromptGate.Release();
+        }
+    }
 
     private void OnProgramStarted(object state, bool timeout)
     {
@@ -236,16 +302,6 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         }
     }
 
-    private void MenuPromotion_Click(object? sender, RoutedEventArgs e)
-    {
-        ProcUtils.ProcessStart($"{Utils.Base64Decode(Global.PromotionUrl)}?t={DateTime.Now.Ticks}");
-    }
-
-    private void MenuSettingsSetUWP_Click(object? sender, RoutedEventArgs e)
-    {
-        ProcUtils.ProcessStart(Utils.GetBinPath("EnableLoopback.exe"));
-    }
-
     public async Task AddServerViaClipboardAsync()
     {
         var clipboardData = await AvaUtils.GetClipboardData(this);
@@ -268,15 +324,6 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         }
 
         ShowHideWindow(true);
-    }
-
-    private void MenuCheckUpdate_Click(object? sender, RoutedEventArgs e)
-    {
-        _checkUpdateView ??= new CheckUpdateView();
-        _checkUpdateView.ViewModel = ViewModel?.CheckUpdateViewModel;
-        DialogHost.Show(_checkUpdateView);
-
-        AppEvents.HasUpdateNotified.Publish(false);
     }
 
     private void MenuBackupAndRestore_Click(object? sender, RoutedEventArgs e)
@@ -323,6 +370,32 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
     #endregion Event
 
     #region UI
+
+    private void NavConnection_Click(object? sender, RoutedEventArgs e)
+    {
+        SetActivePage(pageConnection, navConnection);
+    }
+
+    private void NavAccount_Click(object? sender, RoutedEventArgs e)
+    {
+        SetActivePage(pageAccount, navAccount);
+    }
+
+    private void NavTools_Click(object? sender, RoutedEventArgs e)
+    {
+        SetActivePage(pageTools, navTools);
+    }
+
+    private void SetActivePage(Control activePage, Button activeButton)
+    {
+        pageConnection.IsVisible = ReferenceEquals(activePage, pageConnection);
+        pageAccount.IsVisible = ReferenceEquals(activePage, pageAccount);
+        pageTools.IsVisible = ReferenceEquals(activePage, pageTools);
+
+        navConnection.Classes.Set("Active", ReferenceEquals(activeButton, navConnection));
+        navAccount.Classes.Set("Active", ReferenceEquals(activeButton, navAccount));
+        navTools.Classes.Set("Active", ReferenceEquals(activeButton, navTools));
+    }
 
     public void ShowHideWindow(bool? blShow)
     {
@@ -445,31 +518,6 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         }
 
         RestoreUI();
-    }
-
-    private void AddHelpMenuItem()
-    {
-        var coreInfo = CoreInfoManager.Instance.GetCoreInfo();
-        foreach (var it in coreInfo
-            .Where(t => t.CoreType is not ECoreType.v2fly
-                        and not ECoreType.hysteria))
-        {
-            var item = new MenuItem()
-            {
-                Tag = it.Url?.Replace(@"/releases", ""),
-                Header = string.Format(ResUI.menuWebsiteItem, it.CoreType.ToString().Replace("_", " ")).UpperFirstChar()
-            };
-            item.Click += MenuItem_Click;
-            menuHelp.Items.Add(item);
-        }
-    }
-
-    private void MenuItem_Click(object? sender, RoutedEventArgs e)
-    {
-        if (sender is MenuItem item)
-        {
-            ProcUtils.ProcessStart(item.Tag?.ToString());
-        }
     }
 
     #endregion UI

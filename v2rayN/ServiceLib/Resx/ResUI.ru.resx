@@ -417,9 +417,6 @@
   <data name="menuOptionSetting" xml:space="preserve">
     <value>Параметры</value>
   </data>
-  <data name="menuPromotion" xml:space="preserve">
-    <value>Продвижение</value>
-  </data>
   <data name="menuReload" xml:space="preserve">
     <value>Перезапустить службу</value>
   </data>
@@ -715,7 +712,7 @@
     <value>Включить мультиплексирование Mux</value>
   </data>
   <data name="TbSettingsN" xml:space="preserve">
-    <value>Настройки v2rayN</value>
+    <value>Настройки Miaomiao</value>
   </data>
   <data name="TbSettingsPass" xml:space="preserve">
     <value>Пароль авторизации</value>
@@ -1308,9 +1305,6 @@
   <data name="TbSettingsSrsFilesSource" xml:space="preserve">
     <value>Источник файлов наборов правил sing-box (необязательно)</value>
   </data>
-  <data name="UpgradeAppNotExistTip" xml:space="preserve">
-    <value>Приложение для обновления не найдено</value>
-  </data>
   <data name="TbSettingsRoutingRulesSource" xml:space="preserve">
     <value>Источник правил маршрутизации (необязательно)</value>
   </data>
@@ -1762,7 +1756,7 @@
     <value>Общий ключ (PSK)</value>
   </data>
   <data name="menuExport2InnerUri" xml:space="preserve">
-    <value>Экспорт внутренней ссылки v2rayN в буфер обмена</value>
+    <value>Экспорт внутренней ссылки Miaomiao в буфер обмена</value>
   </data>
   <data name="MsgCheckUpdateHasNewVersion" xml:space="preserve">
     <value>Доступна новая версия {0}: {1}</value>
@@ -1828,6 +1822,6 @@
     <value>Поставщик корневых сертификатов</value>
   </data>
   <data name="TbRootCertificateProviderTip" xml:space="preserve">
-    <value>Применяется только к загрузкам и сетевым запросам графического интерфейса v2rayN. Не влияет на проверку сертификатов ядром.</value>
+    <value>Применяется только к загрузкам и сетевым запросам графического интерфейса Miaomiao. Не влияет на проверку сертификатов ядром.</value>
   </data>
 </root>

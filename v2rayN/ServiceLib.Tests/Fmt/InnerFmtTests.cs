@@ -20,6 +20,7 @@ public class InnerFmtTests
         var uri = InnerFmt.ToUri([group, childA, childB]);
 
         uri.Should().NotBeNullOrWhiteSpace();
+        uri.Should().StartWith("miaomiao://");
 
         var resolved = InnerFmt.Resolve(uri!, "sub-123");
 
@@ -33,5 +34,8 @@ public class InnerFmtTests
         resolvedGroup.ConfigType.Should().Be(EConfigType.PolicyGroup);
         resolvedGroup.GetProtocolExtra().SubChildItems.Should().Be("sub-123");
         resolvedGroup.GetProtocolExtra().ChildItems.Should().Be($"{resolvedChildA.IndexId},{resolvedChildB.IndexId}");
+
+        var legacyUri = uri!.Replace("miaomiao://", "v2rayn://", StringComparison.OrdinalIgnoreCase);
+        InnerFmt.Resolve(legacyUri, "sub-123").Should().HaveCount(3);
     }
 }

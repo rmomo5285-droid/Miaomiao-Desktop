@@ -1,29 +1,93 @@
-name: Code Test
+name: Miaomiao desktop CI
 
 on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
   pull_request:
     branches:
-      - master
-    paths:
-      - 'v2rayN/ServiceLib/Services/CoreConfig/**'
-      - 'v2rayN/ServiceLib/Handler/Fmt/**'
-      - '.github/workflows/test.yml'
+      - main
+
+permissions:
+  contents: read
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    name: Service tests
+    runs-on: ubuntu-24.04
     steps:
-    - name: Checkout
-      uses: actions/checkout@v7
-      with:
-        submodules: 'recursive'
-        fetch-depth: '0'
+      - name: Checkout exact workflow commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          submodules: recursive
+          fetch-depth: 0
+          persist-credentials: false
 
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v6.0.0
-      with:
-        dotnet-version: '8.0.x'
+      - name: Verify checkout
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
 
-    - name: Test Code
-      working-directory: ./v2rayN
-      run: dotnet test ./ServiceLib.Tests
+      - name: Set up pinned .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.100
+
+      - name: Test service library
+        run: dotnet test ./v2rayN/ServiceLib.Tests/ServiceLib.Tests.csproj -c Release
+
+  compile:
+    name: Compile ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: windows-x64
+            runner: windows-2025
+            rid: win-x64
+          - target: macos-x64
+            runner: macos-15
+            rid: osx-x64
+          - target: linux-x64
+            runner: ubuntu-22.04
+            rid: linux-x64
+    steps:
+      - name: Checkout exact workflow commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          submodules: recursive
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify checkout
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+
+      - name: Set up pinned .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.100
+
+      - name: Compile Miaomiao
+        shell: bash
+        run: |
+          set -euo pipefail
+          dotnet publish ./v2rayN/v2rayN.Desktop/v2rayN.Desktop.csproj \
+            -c Release -r "${{ matrix.rid }}" -p:SelfContained=true \
+            -p:EnableWindowsTargeting=true -p:DebugType=None \
+            -p:DebugSymbols=false -o "$RUNNER_TEMP/miaomiao-compile"
+          dotnet publish ./v2rayN/AmazTool/AmazTool.csproj \
+            -c Release -r "${{ matrix.rid }}" -p:SelfContained=true \
+            -p:PublishTrimmed=true -p:EnableWindowsTargeting=true \
+            -p:DebugType=None -p:DebugSymbols=false \
+            -o "$RUNNER_TEMP/miaomiao-compile"
+          if [[ "${{ matrix.target }}" == windows-* ]]; then
+            test -f "$RUNNER_TEMP/miaomiao-compile/Miaomiao.exe"
+            test -f "$RUNNER_TEMP/miaomiao-compile/MiaomiaoHelper.exe"
+          else
+            test -f "$RUNNER_TEMP/miaomiao-compile/Miaomiao"
+            test -f "$RUNNER_TEMP/miaomiao-compile/MiaomiaoHelper"
+          fi

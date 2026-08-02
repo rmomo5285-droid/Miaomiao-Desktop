@@ -90,7 +90,7 @@ public static class ConfigHandler
         config.TunModeItem ??= new TunModeItem
         {
             EnableTun = false,
-            Mtu = 9000,
+            Mtu = Global.TunMtus.First(),
             IcmpRouting = Global.TunIcmpRoutingPolicies.First(),
             EnableLegacyProtect = true,
         };
@@ -725,6 +725,7 @@ public static class ConfigHandler
     public static async Task<int> AddHysteria2Server(Config config, ProfileItem profileItem, bool toFile = true)
     {
         profileItem.ConfigType = EConfigType.Hysteria2;
+        profileItem.CoreType = ECoreType.sing_box;
 
         profileItem.Address = profileItem.Address.TrimEx();
         profileItem.Password = profileItem.Password.TrimEx();
@@ -1937,6 +1938,17 @@ public static class ConfigHandler
             counter = await AddBatchServers4Custom(config, strData, subid, isSub);
         }
 
+        // A bad or blocked response must never destroy the last usable profile set.
+        if (counter < 1 && lstOriSub is { Count: > 0 })
+        {
+            await SQLiteHelper.Instance.InsertAllAsync(lstOriSub);
+            if (activeProfile != null)
+            {
+                await SetDefaultServerIndex(config, activeProfile.IndexId);
+            }
+            return counter;
+        }
+
         //Select active node
         if (activeProfile != null)
         {
@@ -2033,6 +2045,8 @@ public static class ConfigHandler
             item.Sort = subItem.Sort;
             item.Filter = subItem.Filter;
             item.UpdateTime = subItem.UpdateTime;
+            item.NextAttemptTime = subItem.NextAttemptTime;
+            item.ConsecutiveFailures = subItem.ConsecutiveFailures;
             item.ConvertTarget = subItem.ConvertTarget;
             item.PrevProfile = subItem.PrevProfile;
             item.NextProfile = subItem.NextProfile;
@@ -2107,6 +2121,10 @@ public static class ConfigHandler
         if (item is null)
         {
             return 0;
+        }
+        if (MiaomiaoManagedSubscriptionPolicy.IsManaged(item))
+        {
+            return -1;
         }
         await SQLiteHelper.Instance.DeleteAsync(item);
         await RemoveServersViaSubid(config, id, false);

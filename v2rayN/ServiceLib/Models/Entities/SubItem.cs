@@ -24,6 +24,10 @@ public class SubItem
 
     public long UpdateTime { get; set; }
 
+    public long NextAttemptTime { get; set; }
+
+    public int ConsecutiveFailures { get; set; }
+
     public string? ConvertTarget { get; set; }
 
     public string? PrevProfile { get; set; }

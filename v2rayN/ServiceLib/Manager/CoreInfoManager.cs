@@ -56,15 +56,9 @@ public sealed class CoreInfoManager
 
         if (RuntimeInformation.ProcessArchitecture != Architecture.X86)
         {
-            if (IsCheckUpdateSupported(ECoreType.v2rayN))
-            {
-                lst.Add(ECoreType.v2rayN);
-            }
-
             if (!(Utils.IsWindows() && Environment.OSVersion.Version.Major < 10))
             {
                 lst.Add(ECoreType.Xray);
-                lst.Add(ECoreType.mihomo);
                 lst.Add(ECoreType.sing_box);
             }
         }
@@ -76,9 +70,7 @@ public sealed class CoreInfoManager
     {
         return type switch
         {
-            ECoreType.v2rayN => !Utils.IsPackagedInstall(),
             ECoreType.Xray => true,
-            ECoreType.mihomo => true,
             ECoreType.sing_box => true,
             _ => false,
         };
@@ -88,7 +80,6 @@ public sealed class CoreInfoManager
     {
         return type switch
         {
-            ECoreType.v2rayN => preRelease,
             ECoreType.Xray => preRelease,
             _ => false,
         };
@@ -96,7 +87,6 @@ public sealed class CoreInfoManager
 
     private void InitCoreInfo()
     {
-        var urlN = GetCoreUrl(ECoreType.v2rayN);
         var urlXray = GetCoreUrl(ECoreType.Xray);
         var urlMihomo = GetCoreUrl(ECoreType.mihomo);
         var urlSingbox = GetCoreUrl(ECoreType.sing_box);
@@ -104,21 +94,6 @@ public sealed class CoreInfoManager
         _coreInfo =
         [
             new CoreInfo
-                {
-                    CoreType = ECoreType.v2rayN,
-                    Url = GetCoreUrl(ECoreType.v2rayN),
-                    ReleaseApiUrl = urlN.Replace(Global.GithubUrl, Global.GithubApiUrl),
-                    DownloadUrlWin64 = urlN + "/download/{0}/v2rayN-windows-64.zip",
-                    DownloadUrlWinArm64 = urlN + "/download/{0}/v2rayN-windows-arm64.zip",
-                    DownloadUrlLinux64 = urlN + "/download/{0}/v2rayN-linux-64.zip",
-                    DownloadUrlLinuxArm64 = urlN + "/download/{0}/v2rayN-linux-arm64.zip",
-                    DownloadUrlLinuxRiscV64 = urlN + "/download/{0}/v2rayN-linux-riscv64.zip",
-                    DownloadUrlLinuxLoong64 = urlN + "/download/{0}/v2rayN-linux-loong64.zip",
-                    DownloadUrlOSX64 = urlN + "/download/{0}/v2rayN-macos-64.zip",
-                    DownloadUrlOSXArm64 = urlN + "/download/{0}/v2rayN-macos-arm64.zip",
-                },
-
-                new CoreInfo
                 {
                     CoreType = ECoreType.v2fly,
                     CoreExes = ["v2ray"],
