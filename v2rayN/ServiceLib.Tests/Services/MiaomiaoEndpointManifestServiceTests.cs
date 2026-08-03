@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json.Nodes;
 using ServiceLib.Services;
+using Xunit;
 
 namespace ServiceLib.Tests.Services;
 

@@ -2,6 +2,7 @@ using System.Text.Json;
 using ServiceLib.Models.Dto;
 using ServiceLib.Models.Entities;
 using ServiceLib.Services;
+using Xunit;
 
 namespace ServiceLib.Tests.Services;
 
