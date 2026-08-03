@@ -57,6 +57,8 @@ public partial class MainWindowViewModel : MyReactiveObject
     public ReactiveCommand<RxVoid, RxVoid> RebootAsAdminCmd { get; }
     public ReactiveCommand<RxVoid, RxVoid> ClearServerStatisticsCmd { get; }
     public ReactiveCommand<RxVoid, RxVoid> OpenTheFileLocationCmd { get; }
+    public ReactiveCommand<RxVoid, RxVoid> CheckCoreUpdateCmd { get; }
+    public ReactiveCommand<RxVoid, RxVoid> OpenDownloadPageCmd { get; }
 
     //Presets
     public ReactiveCommand<RxVoid, RxVoid> RegionalPresetDefaultCmd { get; }
@@ -223,6 +225,15 @@ public partial class MainWindowViewModel : MyReactiveObject
         OpenTheFileLocationCmd = ReactiveCommand.CreateFromTask(async () =>
         {
             await OpenTheFileLocation();
+        });
+        CheckCoreUpdateCmd = ReactiveCommand.CreateFromTask(async () =>
+        {
+            await AppManager.Instance.WindowDialog.ShowDialogAsync(CheckUpdateViewModel);
+        });
+        OpenDownloadPageCmd = ReactiveCommand.Create(() =>
+        {
+            ProcUtils.ProcessStart(
+                MiaomiaoEndpointManifestService.Instance.GetDownloadUri().AbsoluteUri);
         });
 
         ReloadCmd = ReactiveCommand.CreateFromTask(async () =>

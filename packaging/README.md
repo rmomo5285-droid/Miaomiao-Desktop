@@ -15,6 +15,10 @@ version, builds the checked-out `GITHUB_SHA`, stages the locked core, signs the
 platform bundle, and only then creates release archives. Do not use these
 scripts to publish locally built binaries.
 
+The release validation job also runs `branding/verify-orange-icons.sh`. Regenerate
+icons with `branding/generate-orange-icons.sh` and complete installed-app visual
+review before authorizing a release workflow.
+
 Linux releases are built inside an Ubuntu 22.04 container and require glibc
 2.35 or newer. This covers Ubuntu 22.04/24.04 and distributions with an
 equivalent or newer glibc baseline; older systems are not claimed as supported.

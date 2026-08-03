@@ -1,4 +1,5 @@
 using System.Text.Json;
+using System.Text;
 using ServiceLib.Models.Dto;
 using ServiceLib.Models.Entities;
 using ServiceLib.Services;
@@ -8,6 +9,35 @@ namespace ServiceLib.Tests.Services;
 
 public class MiaomiaoAccountPolicyTests
 {
+    [Fact]
+    public void EncryptedSessionStore_RestoresAndClearsWithoutPlaintextToken()
+    {
+        var directory = Path.Combine(Path.GetTempPath(), $"miaomiao-session-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(directory);
+        try
+        {
+            var sessionPath = Path.Combine(directory, "session.bin");
+            var keyPath = Path.Combine(directory, "session.key");
+            var store = new MiaomiaoEncryptedSessionStore(sessionPath, keyPath);
+
+            store.WriteToken("private-session-token");
+
+            Assert.Equal("private-session-token", store.ReadToken());
+            Assert.DoesNotContain(
+                "private-session-token",
+                Encoding.UTF8.GetString(File.ReadAllBytes(sessionPath)));
+            Assert.Equal(32, File.ReadAllBytes(keyPath).Length);
+
+            store.Clear();
+            Assert.Null(store.ReadToken());
+            Assert.False(File.Exists(sessionPath));
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     [Theory]
     [InlineData(0, MiaomiaoPaymentState.Pending)]
     [InlineData(1, MiaomiaoPaymentState.Processing)]

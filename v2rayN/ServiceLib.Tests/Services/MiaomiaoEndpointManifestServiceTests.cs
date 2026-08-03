@@ -9,6 +9,25 @@ namespace ServiceLib.Tests.Services;
 public class MiaomiaoEndpointManifestServiceTests
 {
     [Fact]
+    public void SelectHighestVersion_UsesHighestAndPreservesMirrorPriorityOnTie()
+    {
+        var candidates = new[]
+        {
+            CreatePayload() with { Version = 4, RegistrationUrl = "https://primary.example.com/register" },
+            CreatePayload() with { Version = 7, RegistrationUrl = "https://fallback-a.example.com/register" },
+            CreatePayload() with { Version = 7, RegistrationUrl = "https://fallback-b.example.com/register" },
+            CreatePayload() with { Version = 6, RegistrationUrl = "https://fallback-c.example.com/register" }
+        };
+
+        var selected = MiaomiaoEndpointManifestService.SelectHighestVersion(
+            candidates,
+            candidate => candidate.Version);
+
+        Assert.Equal(7, selected?.Version);
+        Assert.Equal("https://fallback-a.example.com/register", selected?.RegistrationUrl);
+    }
+
+    [Fact]
     public void TryValidateEnvelope_AcceptsSignedPayload()
     {
         using var signer = ECDsa.Create(ECCurve.NamedCurves.nistP256);

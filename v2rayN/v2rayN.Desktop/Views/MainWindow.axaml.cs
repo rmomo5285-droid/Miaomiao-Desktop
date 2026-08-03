@@ -78,6 +78,8 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
             this.BindCommand(ViewModel, vm => vm.ClearServerStatisticsCmd, v => v.menuClearServerStatistics).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.OpenTheFileLocationCmd, v => v.menuOpenTheFileLocation).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.OpenTheFileLocationCmd, v => v.btnOpenFolder).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.CheckCoreUpdateCmd, v => v.btnCoreUpdate).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.OpenDownloadPageCmd, v => v.btnDownload).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.SubSettingCmd, v => v.btnSubscriptionSetting).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.SubUpdateCmd, v => v.btnQuickRefresh).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.RegionalPresetDefaultCmd, v => v.menuRegionalPresetsDefault).DisposeWith(disposables);
@@ -231,7 +233,11 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
             }
             if (updateNow)
             {
-                ProcUtils.ProcessStart(update.DownloadUrl);
+                var downloadUrl = Uri.TryCreate(update.DownloadUrl, UriKind.Absolute, out var updateUri)
+                    && updateUri.Scheme == Uri.UriSchemeHttps
+                    ? updateUri.AbsoluteUri
+                    : endpointService.GetDownloadUri().AbsoluteUri;
+                ProcUtils.ProcessStart(downloadUrl);
             }
         }
         catch (Exception ex)

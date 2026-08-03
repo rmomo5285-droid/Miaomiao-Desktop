@@ -248,13 +248,22 @@ public partial class MiaomiaoAccountViewModel : MyReactiveObject
 
     public async Task OnWindowActivatedAsync()
     {
-        if (!IsLoggedIn || IsBusy || PendingTradeNo.IsNullOrEmpty())
+        if (!IsLoggedIn || IsBusy)
         {
             return;
         }
 
         try
         {
+            if (CurrentUser == null)
+            {
+                await RunBusyAsync(() => RefreshAccountCoreAsync(forceSubscriptionUpdate: false));
+                return;
+            }
+            if (PendingTradeNo.IsNullOrEmpty())
+            {
+                return;
+            }
             var state = await CheckPaymentCoreAsync(CancellationToken.None);
             if (state == MiaomiaoPaymentState.Processing)
             {
