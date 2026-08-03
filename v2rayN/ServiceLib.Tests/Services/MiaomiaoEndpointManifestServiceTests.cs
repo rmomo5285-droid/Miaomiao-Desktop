@@ -122,6 +122,96 @@ public class MiaomiaoEndpointManifestServiceTests
     }
 
     [Fact]
+    public void TryValidateEnvelope_AcceptsCompleteClientUpdates()
+    {
+        using var signer = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var payload = CreatePayload() with { Updates = CreateUpdates() };
+        var payloadBytes = Encoding.UTF8.GetBytes(JsonUtils.Serialize(payload, false));
+
+        var result = MiaomiaoEndpointManifestService.TryValidateEnvelope(
+            CreateSignedEnvelope(signer, payloadBytes),
+            signer.ExportSubjectPublicKeyInfoPem(),
+            out var parsed,
+            out var error);
+
+        Assert.True(result, error);
+        Assert.Equal(742, parsed?.Updates?.Android?.Build);
+        Assert.Equal("7.24.5", parsed?.Updates?.Desktop?.Version);
+    }
+
+    [Fact]
+    public void TryValidateEnvelope_RejectsIncompleteOrUnexpectedClientUpdates()
+    {
+        using var signer = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var publicKey = signer.ExportSubjectPublicKeyInfoPem();
+        var payloadNode = JsonNode.Parse(
+            JsonUtils.Serialize(CreatePayload() with { Updates = CreateUpdates() }, false))!.AsObject();
+        var updatesNode = payloadNode[nameof(MiaomiaoEndpointManifestPayload.Updates)]!.AsObject();
+        Assert.True(updatesNode.Remove(nameof(MiaomiaoClientUpdates.Desktop)));
+
+        Assert.False(MiaomiaoEndpointManifestService.TryValidateEnvelope(
+            CreateSignedEnvelope(signer, Encoding.UTF8.GetBytes(payloadNode.ToJsonString())),
+            publicKey,
+            out _,
+            out _));
+
+        payloadNode = JsonNode.Parse(
+            JsonUtils.Serialize(CreatePayload() with { Updates = CreateUpdates() }, false))!.AsObject();
+        payloadNode[nameof(MiaomiaoEndpointManifestPayload.Updates)]!
+            [nameof(MiaomiaoClientUpdates.Desktop)]!["command"] = "run-anything";
+
+        Assert.False(MiaomiaoEndpointManifestService.TryValidateEnvelope(
+            CreateSignedEnvelope(signer, Encoding.UTF8.GetBytes(payloadNode.ToJsonString())),
+            publicKey,
+            out _,
+            out _));
+    }
+
+    [Theory]
+    [InlineData("7.24", 72405, "https://download.example.com/client", false)]
+    [InlineData("7.24.5", 0, "https://download.example.com/client", false)]
+    [InlineData("7.24.5", 72405, "http://download.example.com/client", false)]
+    [InlineData("7.24.5", 72405, "https://127.0.0.1/client", false)]
+    public void TryValidateEnvelope_RejectsInvalidDesktopUpdate(
+        string version,
+        long build,
+        string downloadUrl,
+        bool required)
+    {
+        using var signer = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+        var updates = CreateUpdates();
+        var payload = CreatePayload() with
+        {
+            Updates = updates with
+            {
+                Desktop = updates.Desktop! with
+                {
+                    Version = version,
+                    Build = build,
+                    DownloadUrl = downloadUrl,
+                    Required = required,
+                }
+            }
+        };
+
+        Assert.False(MiaomiaoEndpointManifestService.TryValidateEnvelope(
+            CreateSignedEnvelope(signer, Encoding.UTF8.GetBytes(JsonUtils.Serialize(payload, false))),
+            signer.ExportSubjectPublicKeyInfoPem(),
+            out _,
+            out _));
+    }
+
+    [Fact]
+    public void DesktopUpdateComparison_UsesSignedSemanticVersion()
+    {
+        var update = CreateUpdates().Desktop!;
+
+        Assert.True(MiaomiaoEndpointManifestService.IsDesktopUpdateAvailable(update, "7.24.4"));
+        Assert.False(MiaomiaoEndpointManifestService.IsDesktopUpdateAvailable(update, "7.24.5"));
+        Assert.False(MiaomiaoEndpointManifestService.IsDesktopUpdateAvailable(update, "7.25.0"));
+    }
+
+    [Fact]
     public void CachedValidation_PreservesExpiredLastKnownGoodManifest()
     {
         using var signer = ECDsa.Create(ECCurve.NamedCurves.nistP256);
@@ -173,6 +263,12 @@ public class MiaomiaoEndpointManifestServiceTests
         var afterAcknowledgement = MiaomiaoEndpointManifestService.WithAcknowledgedNoticeVersion(afterAutomaticApply, 8);
         Assert.Equal(8, afterAcknowledgement.HighestAppliedVersion);
         Assert.Equal(8, afterAcknowledgement.AcknowledgedNoticeVersion);
+
+        var afterUpdateDismissal = MiaomiaoEndpointManifestService.WithAcknowledgedDesktopUpdateBuild(
+            afterAcknowledgement,
+            72405);
+        Assert.Equal(72405, afterUpdateDismissal.AcknowledgedDesktopUpdateBuild);
+        Assert.Equal(8, afterUpdateDismissal.HighestAppliedVersion);
     }
 
     private static string CreateSignedEnvelope(ECDsa signer, byte[] payloadBytes)
@@ -200,5 +296,24 @@ public class MiaomiaoEndpointManifestServiceTests
             "https://download.example.com/download/index.html",
             ["https://cdn.example.com/manifest.json"],
             new("migration-7", "入口更新", "请切换到新入口", true));
+    }
+
+    private static MiaomiaoClientUpdates CreateUpdates()
+    {
+        return new(
+            Android: new(
+                Version: "2.3.2",
+                Build: 742,
+                DownloadUrl: "https://download.example.com/android",
+                Required: false,
+                Title: "Android update",
+                Message: "A newer Android client is available."),
+            Desktop: new(
+                Version: "7.24.5",
+                Build: 72405,
+                DownloadUrl: "https://download.example.com/desktop",
+                Required: false,
+                Title: "Desktop update",
+                Message: "A newer desktop client is available."));
     }
 }

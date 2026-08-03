@@ -12,8 +12,9 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
     private static Config _config;
     private readonly SingleReplaceableDisposable _layoutBindingsDisposable = new();
     private readonly WindowNotificationManager? _manager;
-    private readonly SemaphoreSlim _miaomiaoMigrationPromptGate = new(1, 1);
+    private readonly SemaphoreSlim _miaomiaoPromptGate = new(1, 1);
     private readonly HashSet<long> _shownMiaomiaoMigrationVersions = [];
+    private readonly HashSet<long> _shownMiaomiaoDesktopUpdateBuilds = [];
     private BackupAndRestoreView? _backupAndRestoreView;
     private bool _blCloseByUser = false;
     private bool _isWindowOpened;
@@ -130,7 +131,7 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
             AppEvents.MiaomiaoManifestUpdated
               .AsObservable()
               .ObserveOn(RxSchedulers.MainThreadScheduler)
-              .Subscribe(_manifestResult => _ = ShowMiaomiaoMigrationNoticeAsync())
+              .Subscribe(_manifestResult => _ = ShowMiaomiaoPromptsAsync())
               .DisposeWith(disposables);
 
             AppEvents.AppExitRequested
@@ -175,7 +176,7 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
     {
         _isWindowOpened = true;
         Opened -= MainWindow_Opened;
-        await ShowMiaomiaoMigrationNoticeAsync();
+        await ShowMiaomiaoPromptsAsync();
     }
 
     private async void MainWindow_Activated(object? sender, EventArgs e)
@@ -186,41 +187,60 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         }
     }
 
-    private async Task ShowMiaomiaoMigrationNoticeAsync()
+    private async Task ShowMiaomiaoPromptsAsync()
     {
         if (!_isWindowOpened)
         {
             return;
         }
 
-        await _miaomiaoMigrationPromptGate.WaitAsync();
+        await _miaomiaoPromptGate.WaitAsync();
         try
         {
             var endpointService = MiaomiaoEndpointManifestService.Instance;
             var payload = endpointService.GetCurrent();
-            if (payload.MigrationNotice is not { } notice
-                || !endpointService.ShouldPrompt(payload)
-                || !_shownMiaomiaoMigrationVersions.Add(payload.Version))
+            if (payload.MigrationNotice is { } notice
+                && endpointService.ShouldPromptMigration(payload)
+                && _shownMiaomiaoMigrationVersions.Add(payload.Version))
+            {
+                ShowHideWindow(true);
+                var primaryHost = new Uri(payload.ApiEndpoints[0]).Host;
+                var importance = notice.Required ? "重要通知\n\n" : string.Empty;
+                var message = $"{importance}{notice.Title}\n\n{notice.Message}\n\n服务入口已由签名配置自动更新为：{primaryHost}\n本地节点和订阅缓存不会被清除。";
+                if (await UI.ShowYesNo(message) == ButtonResult.Yes)
+                {
+                    await endpointService.AcknowledgeMigrationAsync(payload.Version);
+                }
+            }
+
+            var update = endpointService.GetAvailableDesktopUpdate(payload);
+            if (update == null
+                || !endpointService.ShouldPromptDesktopUpdate(payload)
+                || !_shownMiaomiaoDesktopUpdateBuilds.Add(update.Build))
             {
                 return;
             }
 
             ShowHideWindow(true);
-            var primaryHost = new Uri(payload.ApiEndpoints[0]).Host;
-            var importance = notice.Required ? "重要通知\n\n" : string.Empty;
-            var message = $"{importance}{notice.Title}\n\n{notice.Message}\n\n服务入口已由签名配置自动更新为：{primaryHost}\n本地节点和订阅缓存不会被清除。";
-            if (await UI.ShowYesNo(message) == ButtonResult.Yes)
+            var updateImportance = update.Required == true ? "必须更新\n\n" : string.Empty;
+            var updateMessage = $"{updateImportance}{update.Title}\n\n{update.Message}\n\n当前版本：{Utils.GetVersionInfo()}\n最新版本：{update.Version}\n\n点击确定前往官方下载页。";
+            var updateNow = await UI.ShowYesNo(updateMessage) == ButtonResult.Yes;
+            if (update.Required != true)
             {
-                await endpointService.AcknowledgeMigrationAsync(payload.Version);
+                await endpointService.AcknowledgeDesktopUpdateAsync(update.Build);
+            }
+            if (updateNow)
+            {
+                ProcUtils.ProcessStart(update.DownloadUrl);
             }
         }
         catch (Exception ex)
         {
-            Logging.SaveLog("Show Miaomiao migration notice", ex);
+            Logging.SaveLog("Show Miaomiao manifest prompts", ex);
         }
         finally
         {
-            _miaomiaoMigrationPromptGate.Release();
+            _miaomiaoPromptGate.Release();
         }
     }
 

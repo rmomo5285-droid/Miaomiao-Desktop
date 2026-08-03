@@ -15,6 +15,20 @@ public sealed record MiaomiaoMigrationNotice(
     bool Required = false);
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record MiaomiaoClientUpdate(
+    string Version,
+    long Build,
+    string DownloadUrl,
+    bool? Required,
+    string Title,
+    string Message);
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
+public sealed record MiaomiaoClientUpdates(
+    MiaomiaoClientUpdate? Android,
+    MiaomiaoClientUpdate? Desktop);
+
+[JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record MiaomiaoEndpointManifestPayload(
     int Schema,
     long Version,
@@ -24,7 +38,8 @@ public sealed record MiaomiaoEndpointManifestPayload(
     string RegistrationUrl,
     string DownloadPageUrl,
     List<string> BootstrapMirrors,
-    MiaomiaoMigrationNotice? MigrationNotice);
+    MiaomiaoMigrationNotice? MigrationNotice,
+    MiaomiaoClientUpdates? Updates = null);
 
 [JsonUnmappedMemberHandling(JsonUnmappedMemberHandling.Disallow)]
 public sealed record MiaomiaoEndpointManifestEnvelope(
@@ -49,6 +64,12 @@ public sealed class MiaomiaoEndpointManifestService
     private const int MaxUrlLength = 2048;
     private const int MaxEndpointCount = 8;
     private const int MaxMirrorCount = 8;
+    private const int MaxUpdateVersionLength = 64;
+    private const int MaxUpdateTitleLength = 200;
+    private const int MaxUpdateMessageLength = 4000;
+    private static readonly Regex UpdateVersionPattern = new(
+        "^(0|[1-9]\\d{0,8})\\.(0|[1-9]\\d{0,8})\\.(0|[1-9]\\d{0,8})$",
+        RegexOptions.CultureInvariant);
 
     public const string PublicKeyPem = """
         -----BEGIN PUBLIC KEY-----
@@ -59,7 +80,7 @@ public sealed class MiaomiaoEndpointManifestService
 
     private static readonly string[] BuiltInMirrors =
     [
-        "https://cdn.vpnmiao.com/json",
+        "https://cdn.vpnmiao.com/manifest.json",
         "https://rmomo5285-droid.github.io/Miaomiao-Config/manifest.json",
         "https://cdn.jsdelivr.net/gh/rmomo5285-droid/Miaomiao-Config@gh-pages/manifest.json",
         "https://raw.githubusercontent.com/rmomo5285-droid/Miaomiao-Config/gh-pages/manifest.json",
@@ -74,7 +95,8 @@ public sealed class MiaomiaoEndpointManifestService
         RegistrationUrl: "https://www.miaonetwork.com/#/register",
         DownloadPageUrl: "https://download.vpnmiao.com/download/index.html",
         BootstrapMirrors: [.. BuiltInMirrors],
-        MigrationNotice: null);
+        MigrationNotice: null,
+        Updates: null);
 
     private static readonly Lazy<MiaomiaoEndpointManifestService> InstanceFactory = new(() => new());
     private readonly SemaphoreSlim _refreshLock = new(1, 1);
@@ -202,8 +224,31 @@ public sealed class MiaomiaoEndpointManifestService
     public bool ShouldPrompt(MiaomiaoEndpointManifestPayload? payload = null)
     {
         payload ??= GetCurrent();
+        return ShouldPromptMigration(payload) || ShouldPromptDesktopUpdate(payload);
+    }
+
+    public bool ShouldPromptMigration(MiaomiaoEndpointManifestPayload? payload = null)
+    {
+        payload ??= GetCurrent();
         return payload.MigrationNotice != null
             && payload.Version > LoadState().AcknowledgedNoticeVersion;
+    }
+
+    public bool ShouldPromptDesktopUpdate(MiaomiaoEndpointManifestPayload? payload = null)
+    {
+        payload ??= GetCurrent();
+        var update = GetAvailableDesktopUpdate(payload);
+        return update != null
+            && (update.Required == true || update.Build > LoadState().AcknowledgedDesktopUpdateBuild);
+    }
+
+    public MiaomiaoClientUpdate? GetAvailableDesktopUpdate(MiaomiaoEndpointManifestPayload? payload = null)
+    {
+        payload ??= GetCurrent();
+        var update = payload.Updates?.Desktop;
+        return update != null && IsDesktopUpdateAvailable(update, Utils.GetVersionInfo())
+            ? update
+            : null;
     }
 
     public Task AcknowledgeMigrationAsync(long version, CancellationToken cancellationToken = default)
@@ -225,6 +270,34 @@ public sealed class MiaomiaoEndpointManifestService
             SaveStateCore(WithAcknowledgedNoticeVersion(state, version));
         }
         return Task.CompletedTask;
+    }
+
+    public Task AcknowledgeDesktopUpdateAsync(long build, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var update = GetAvailableDesktopUpdate();
+        if (update == null || update.Build != build || update.Required == true)
+        {
+            throw new ArgumentOutOfRangeException(nameof(build), "Only the active optional desktop update can be acknowledged.");
+        }
+
+        lock (_stateGate)
+        {
+            var state = LoadStateCore();
+            if (build <= state.AcknowledgedDesktopUpdateBuild)
+            {
+                return Task.CompletedTask;
+            }
+            SaveStateCore(WithAcknowledgedDesktopUpdateBuild(state, build));
+        }
+        return Task.CompletedTask;
+    }
+
+    internal static bool IsDesktopUpdateAvailable(MiaomiaoClientUpdate update, string currentVersion)
+    {
+        var current = new SemanticVersion(currentVersion);
+        var candidate = new SemanticVersion(update.Version);
+        return !(current >= candidate);
     }
 
     public static bool TryValidateEnvelope(
@@ -358,9 +431,31 @@ public sealed class MiaomiaoEndpointManifestService
             error = "manifest contains an invalid migration notice";
             return false;
         }
+        if (payload.Updates is { } updates
+            && (updates.Android == null
+                || updates.Desktop == null
+                || !IsValidClientUpdate(updates.Android)
+                || !IsValidClientUpdate(updates.Desktop)))
+        {
+            error = "manifest contains invalid client update metadata";
+            return false;
+        }
 
         error = string.Empty;
         return true;
+    }
+
+    private static bool IsValidClientUpdate(MiaomiaoClientUpdate update)
+    {
+        return update.Version is { Length: > 0 and <= MaxUpdateVersionLength }
+            && UpdateVersionPattern.IsMatch(update.Version)
+            && update.Build is > 0 and <= int.MaxValue
+            && IsValidHttpsUrl(update.DownloadUrl)
+            && update.Required.HasValue
+            && !string.IsNullOrWhiteSpace(update.Title)
+            && update.Title.Length <= MaxUpdateTitleLength
+            && !string.IsNullOrWhiteSpace(update.Message)
+            && update.Message.Length <= MaxUpdateMessageLength;
     }
 
     private static bool IsValidApiEndpoint(string? value)
@@ -462,7 +557,8 @@ public sealed class MiaomiaoEndpointManifestService
     {
         var acknowledged = Math.Max(0, Math.Max(state.AcknowledgedNoticeVersion, state.AcceptedVersion));
         var applied = Math.Max(acknowledged, Math.Max(0, state.HighestAppliedVersion));
-        return new(applied, acknowledged, 0);
+        var acknowledgedDesktopUpdateBuild = Math.Max(0, state.AcknowledgedDesktopUpdateBuild);
+        return new(applied, acknowledged, 0, acknowledgedDesktopUpdateBuild);
     }
 
     internal static MiaomiaoEndpointState WithAppliedVersion(MiaomiaoEndpointState state, long version)
@@ -481,9 +577,21 @@ public sealed class MiaomiaoEndpointManifestService
                 Math.Max(state.AcknowledgedNoticeVersion, version))
         };
     }
+
+    internal static MiaomiaoEndpointState WithAcknowledgedDesktopUpdateBuild(
+        MiaomiaoEndpointState state,
+        long build)
+    {
+        state = NormalizeState(state);
+        return state with
+        {
+            AcknowledgedDesktopUpdateBuild = Math.Max(state.AcknowledgedDesktopUpdateBuild, build)
+        };
+    }
 }
 
 internal sealed record MiaomiaoEndpointState(
     long HighestAppliedVersion = 0,
     long AcknowledgedNoticeVersion = 0,
-    long AcceptedVersion = 0);
+    long AcceptedVersion = 0,
+    long AcknowledgedDesktopUpdateBuild = 0);
