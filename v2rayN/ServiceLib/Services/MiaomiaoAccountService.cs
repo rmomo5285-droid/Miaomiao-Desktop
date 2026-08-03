@@ -276,14 +276,14 @@ public sealed class MiaomiaoAccountService
                 if (route == null)
                 {
                     await _endpointService.RefreshAsync(cancellationToken);
-                    var refreshedEndpoints = GetApiEndpoints();
-                    var endpointSet = endpoints
+                    var refreshedMutationEndpoints = GetApiEndpoints();
+                    var mutationEndpointSet = endpoints
                         .Select(endpoint => endpoint.AbsoluteUri)
                         .ToHashSet(StringComparer.OrdinalIgnoreCase);
-                    var changedEndpoints = refreshedEndpoints
-                        .Where(endpoint => !endpointSet.Contains(endpoint.AbsoluteUri))
+                    var changedMutationEndpoints = refreshedMutationEndpoints
+                        .Where(endpoint => !mutationEndpointSet.Contains(endpoint.AbsoluteUri))
                         .ToList();
-                    route = await FindAuthenticatedRouteAsync(changedEndpoints, token!, failures, cancellationToken);
+                    route = await FindAuthenticatedRouteAsync(changedMutationEndpoints, token!, failures, cancellationToken);
                 }
 
                 if (route == null)
@@ -869,6 +869,8 @@ public sealed class MiaomiaoAccountService
         {
             return true;
         }
+
+        result = default;
         return value.ValueKind == JsonValueKind.String && int.TryParse(value.GetString(), out result);
     }
 
