@@ -10,6 +10,9 @@
 - 托管订阅每 48 小时自动更新；登录、支付完成和用户主动刷新可立即更新。
 - 更新失败时保留本地节点，并按 15 分钟、60 分钟、6 小时退避重试。
 - 服务入口由 ECDSA P-256 签名清单迁移；清单只允许下发 HTTPS 入口和展示型公告，不能执行远程命令。
+- 镜像刷新会扫描全部有效响应并稳定选择最高版本，同版本时保留清单中的首选顺序；下载页可回退到内置 HTTPS 地址。
+- 登录令牌使用本机随机 AES-GCM 密钥加密并以仅当前用户可读权限持久化；401 或退出登录会清除会话。
+- 工具页提供核心更新检查和签名清单下载入口。
 - Hysteria2 节点固定使用 sing-box 内核，TUN 默认 MTU 为 1280。
 
 ## 支持平台
@@ -25,6 +28,13 @@
 - Windows 安装包使用主题包含 `Miaomiao` 的代码签名证书；
 - macOS 应用使用 `Miaomiao` 品牌的 Developer ID，并完成公证；
 - 所有发布文件生成 SHA-256 清单和喵喵发布密钥的 GPG 签名。
+
+## Orange 图标
+
+品牌母版位于 `branding/orange-icon.png` 和 `branding/orange-icon.ico`。安装 ImageMagick 与
+`icnsutils` 后运行 `bash branding/generate-orange-icons.sh` 可重建 Linux PNG、Windows ICO、
+四种托盘状态图标和 macOS ICNS；`bash branding/verify-orange-icons.sh` 校验母版哈希、格式、
+尺寸和 Avalonia 引用。普通 push/PR 的 CI 会上传 `miaomiao-desktop-orange-icon-review` 供视觉审核。
 
 ## 开发与许可
 

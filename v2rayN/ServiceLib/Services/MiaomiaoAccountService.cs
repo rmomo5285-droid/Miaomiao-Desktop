@@ -36,14 +36,23 @@ public sealed class MiaomiaoAccountService
     };
 
     private readonly MiaomiaoEndpointManifestService _endpointService;
+    private readonly IMiaomiaoSessionStore _sessionStore;
     private string? _bearerToken;
 
     public static MiaomiaoAccountService Instance => InstanceFactory.Value;
     public bool IsAuthenticated => Volatile.Read(ref _bearerToken).IsNotEmpty();
 
-    public MiaomiaoAccountService(MiaomiaoEndpointManifestService? endpointService = null)
+    public MiaomiaoAccountService(
+        MiaomiaoEndpointManifestService? endpointService = null,
+        IMiaomiaoSessionStore? sessionStore = null)
     {
         _endpointService = endpointService ?? MiaomiaoEndpointManifestService.Instance;
+        _sessionStore = sessionStore ?? new MiaomiaoEncryptedSessionStore();
+        var restoredToken = _sessionStore.ReadToken()?.Trim();
+        if (restoredToken is { Length: > 0 and <= 8192 })
+        {
+            Volatile.Write(ref _bearerToken, restoredToken);
+        }
     }
 
     public Uri GetRegistrationUri()
@@ -81,12 +90,21 @@ public sealed class MiaomiaoAccountService
         }
 
         Volatile.Write(ref _bearerToken, token);
+        try
+        {
+            _sessionStore.WriteToken(token);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("Persist Miaomiao login session", ex);
+        }
         return new MiaomiaoLoginResult(email);
     }
 
     public void Logout()
     {
         Volatile.Write(ref _bearerToken, null);
+        _sessionStore.Clear();
     }
 
     public async Task<MiaomiaoUserInfo> GetUserInfoAsync(CancellationToken cancellationToken = default)

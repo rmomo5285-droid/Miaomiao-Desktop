@@ -150,6 +150,18 @@ public sealed class MiaomiaoEndpointManifestService
         }
     }
 
+    public Uri GetDownloadUri()
+    {
+        var current = GetCurrent().DownloadPageUrl;
+        if (Uri.TryCreate(current, UriKind.Absolute, out var uri)
+            && uri.Scheme == Uri.UriSchemeHttps)
+        {
+            return uri;
+        }
+
+        return new Uri(BuiltInPayload.DownloadPageUrl);
+    }
+
     public async Task<MiaomiaoManifestRefreshResult> RefreshAsync(CancellationToken cancellationToken = default)
     {
         await _refreshLock.WaitAsync(cancellationToken);
@@ -165,6 +177,7 @@ public sealed class MiaomiaoEndpointManifestService
                 .ToList();
 
             var errors = new List<string>();
+            var candidates = new List<ManifestCandidate>();
             foreach (var viaProxy in new[] { false, true })
             {
                 foreach (var mirror in mirrors)
@@ -194,23 +207,22 @@ public sealed class MiaomiaoEndpointManifestService
                             continue;
                         }
 
-                        // A version is immutable. A signing/publishing mistake must use a new version.
-                        if (payload.Version == current.Version)
-                        {
-                            continue;
-                        }
-
-                        var updated = payload.Version > current.Version;
-                        await SaveEnvelopeAsync(content, cancellationToken);
-                        RecordAppliedVersion(payload.Version);
-                        Volatile.Write(ref _cachedPayload, payload);
-                        return new(payload, updated, ShouldPrompt(payload));
+                        candidates.Add(new ManifestCandidate(content, payload));
                     }
                     catch (Exception ex) when (ex is not OperationCanceledException)
                     {
                         errors.Add($"{mirror}: {ex.Message}");
                     }
                 }
+            }
+
+            var selected = SelectHighestVersion(candidates, candidate => candidate.Payload.Version);
+            if (selected != null && selected.Payload.Version > current.Version)
+            {
+                await SaveEnvelopeAsync(selected.Content, cancellationToken);
+                RecordAppliedVersion(selected.Payload.Version);
+                Volatile.Write(ref _cachedPayload, selected.Payload);
+                return new(selected.Payload, true, ShouldPrompt(selected.Payload));
             }
 
             return new(current, false, ShouldPrompt(current), string.Join("; ", errors));
@@ -553,6 +565,23 @@ public sealed class MiaomiaoEndpointManifestService
         return candidateVersion >= Math.Max(currentVersion, highestAppliedVersion);
     }
 
+    internal static T? SelectHighestVersion<T>(IEnumerable<T> candidates, Func<T, long> versionSelector)
+        where T : class
+    {
+        T? selected = null;
+        long selectedVersion = long.MinValue;
+        foreach (var candidate in candidates)
+        {
+            var version = versionSelector(candidate);
+            if (selected == null || version > selectedVersion)
+            {
+                selected = candidate;
+                selectedVersion = version;
+            }
+        }
+        return selected;
+    }
+
     internal static MiaomiaoEndpointState NormalizeState(MiaomiaoEndpointState state)
     {
         var acknowledged = Math.Max(0, Math.Max(state.AcknowledgedNoticeVersion, state.AcceptedVersion));
@@ -588,6 +617,10 @@ public sealed class MiaomiaoEndpointManifestService
             AcknowledgedDesktopUpdateBuild = Math.Max(state.AcknowledgedDesktopUpdateBuild, build)
         };
     }
+
+    private sealed record ManifestCandidate(
+        string Content,
+        MiaomiaoEndpointManifestPayload Payload);
 }
 
 internal sealed record MiaomiaoEndpointState(
