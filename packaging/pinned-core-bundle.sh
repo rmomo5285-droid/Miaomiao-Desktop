@@ -83,7 +83,9 @@ miaomiao_stage_pinned_core_bundle() {
   if [[ -d "$temp_dir/unpacked/bin" ]]; then
     bundle_root="$temp_dir/unpacked"
   else
-    mapfile -t bundle_roots < <(find "$temp_dir/unpacked" -mindepth 2 -maxdepth 2 -type d -name bin -print)
+    while IFS= read -r entry; do
+      bundle_roots+=("$entry")
+    done < <(find "$temp_dir/unpacked" -mindepth 2 -maxdepth 2 -type d -name bin -print)
     if [[ "${#bundle_roots[@]}" -eq 1 ]]; then
       bundle_root="$(dirname "${bundle_roots[0]}")"
     fi
