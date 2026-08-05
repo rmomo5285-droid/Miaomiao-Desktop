@@ -5,6 +5,7 @@ namespace v2rayN.Desktop;
 
 internal class Program
 {
+    private const string SmokeTestArgument = "--miaomiao-smoke-test";
     public static EventWaitHandle ProgramStarted;
 
     // Initialization code. Don't use any Avalonia, third-party APIs or any
@@ -13,8 +14,16 @@ internal class Program
     [STAThread]
     public static void Main(string[] args)
     {
+        var smokeTest = args.Any(arg => string.Equals(arg, SmokeTestArgument, StringComparison.Ordinal));
         if (OnStartup(args) == false)
         {
+            Environment.Exit(smokeTest ? 1 : 0);
+            return;
+        }
+
+        if (smokeTest)
+        {
+            Console.WriteLine("Miaomiao headless startup smoke test passed.");
             Environment.Exit(0);
             return;
         }

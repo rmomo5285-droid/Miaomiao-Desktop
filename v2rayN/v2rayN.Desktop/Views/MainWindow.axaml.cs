@@ -493,19 +493,33 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         SetActivePage(pageConnection, navRoutes);
     }
 
-    private async void MiaomiaoRoutes_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    private void MiaomiaoRoutes_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (_isApplyingRouteSelection
-            || sender is not ListBox { SelectedItem: ServiceLib.Models.Dto.ProfileItemModel selected }
-            || selected.IndexId.IsNullOrEmpty()
+            || sender is not ListBox listBox
             || ViewModel is null)
         {
             return;
         }
 
-        ViewModel.ProfilesViewModel.SelectedProfile = selected;
-        ViewModel.ProfilesViewModel.SelectedProfiles = [selected];
-        if (_config.IndexId == selected.IndexId)
+        ViewModel.ProfilesViewModel.SelectedProfiles = listBox.SelectedItems
+            .OfType<ProfileItemModel>()
+            .OrderBy(item => item.Sort)
+            .ToList();
+
+        if (listBox.SelectedItem is ProfileItemModel selected)
+        {
+            ViewModel.ProfilesViewModel.SelectedProfile = selected;
+        }
+    }
+
+    private async void MiaomiaoRoutes_DoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (_isApplyingRouteSelection
+            || sender is not ListBox { SelectedItem: ProfileItemModel selected }
+            || selected.IndexId.IsNullOrEmpty()
+            || ViewModel is null
+            || _config.IndexId == selected.IndexId)
         {
             return;
         }

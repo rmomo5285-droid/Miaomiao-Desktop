@@ -107,6 +107,52 @@ jobs:
             test -f "$output/bin/sing_box/sing-box"
           fi
 
+      - name: Run packaged headless startup smoke test
+        shell: bash
+        run: |
+          set -euo pipefail
+          output="$GITHUB_WORKSPACE/stage/${{ matrix.platform }}"
+          if [[ "${{ matrix.platform }}" == windows-* ]]; then
+            "$output/Miaomiao.exe" --miaomiao-smoke-test
+          else
+            chmod 0755 "$output/Miaomiao" "$output/MiaomiaoHelper"
+            "$output/Miaomiao" --miaomiao-smoke-test
+          fi
+
+      - name: Assemble and verify macOS preview application bundle
+        if: matrix.platform == 'macos-x64'
+        shell: bash
+        run: |
+          set -euo pipefail
+          publish="$GITHUB_WORKSPACE/stage/${{ matrix.platform }}"
+          package="$GITHUB_WORKSPACE/stage/${{ matrix.platform }}-package"
+          app="$package/Miaomiao.app"
+          mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources"
+          cp -a "$publish/." "$app/Contents/MacOS/"
+          install -m 0644 ./v2rayN/v2rayN.Desktop/v2rayN.icns \
+            "$app/Contents/Resources/Miaomiao.icns"
+          cat > "$app/Contents/Info.plist" <<'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "https://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>CFBundleDevelopmentRegion</key><string>zh_CN</string>
+            <key>CFBundleDisplayName</key><string>Miaomiao Preview</string>
+            <key>CFBundleExecutable</key><string>Miaomiao</string>
+            <key>CFBundleIconFile</key><string>Miaomiao.icns</string>
+            <key>CFBundleIdentifier</key><string>com.miaomiao.client.desktop.preview</string>
+            <key>CFBundleName</key><string>Miaomiao</string>
+            <key>CFBundlePackageType</key><string>APPL</string>
+            <key>LSMinimumSystemVersion</key><string>13.7</string>
+            <key>NSHighResolutionCapable</key><true/>
+          </dict>
+          </plist>
+          PLIST
+          plutil -lint "$app/Contents/Info.plist"
+          test -x "$app/Contents/MacOS/Miaomiao"
+          test -f "$app/Contents/Resources/Miaomiao.icns"
+          file "$app/Contents/MacOS/Miaomiao" | grep -q 'Mach-O 64-bit executable x86_64'
+
       - name: Archive Windows preview
         if: matrix.archive == 'zip'
         shell: pwsh
@@ -115,7 +161,12 @@ jobs:
       - name: Archive Unix preview
         if: matrix.archive == 'tar.gz'
         shell: bash
-        run: tar -czf "Miaomiao-preview-${{ matrix.platform }}.tar.gz" -C "stage/${{ matrix.platform }}" .
+        run: |
+          if [[ "${{ matrix.platform }}" == macos-* ]]; then
+            tar -czf "Miaomiao-preview-${{ matrix.platform }}.tar.gz" -C "stage/${{ matrix.platform }}-package" .
+          else
+            tar -czf "Miaomiao-preview-${{ matrix.platform }}.tar.gz" -C "stage/${{ matrix.platform }}" .
+          fi
 
       - name: Upload preview artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
