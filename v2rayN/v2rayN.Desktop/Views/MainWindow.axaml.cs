@@ -468,11 +468,6 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         ShowAccountSection(1, "套餐", navPlans);
     }
 
-    private void NavOrders_Click(object? sender, RoutedEventArgs e)
-    {
-        ShowAccountSection(2, "订单", navOrders);
-    }
-
     private void NavTools_Click(object? sender, RoutedEventArgs e)
     {
         SetActivePage(pageTools, navTools);
@@ -486,6 +481,11 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
     private void OpenAccount_Click(object? sender, RoutedEventArgs e)
     {
         ShowAccountSection(0, "账户", navAccount);
+    }
+
+    private void OpenNotices_Click(object? sender, RoutedEventArgs e)
+    {
+        ShowAccountSection(3, "公告", navAccount);
     }
 
     private void OpenAllRoutes_Click(object? sender, RoutedEventArgs e)
@@ -550,7 +550,6 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         navRoutes.Classes.Set("Active", ReferenceEquals(activeButton, navRoutes));
         navAccount.Classes.Set("Active", ReferenceEquals(activeButton, navAccount));
         navPlans.Classes.Set("Active", ReferenceEquals(activeButton, navPlans));
-        navOrders.Classes.Set("Active", ReferenceEquals(activeButton, navOrders));
         navTools.Classes.Set("Active", ReferenceEquals(activeButton, navTools));
     }
 

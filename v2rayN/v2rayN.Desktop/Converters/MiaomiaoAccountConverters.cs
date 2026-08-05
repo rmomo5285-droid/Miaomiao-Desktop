@@ -122,7 +122,69 @@ public sealed class MiaomiaoOrderStatusConverter : IValueConverter
 public sealed class MiaomiaoProxyStateTextConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
-        => value is int state && state == (int)ESysProxyType.ForcedChange ? "已连接\n点击断开" : "开启连接";
+        => value is int state && state == (int)ESysProxyType.ForcedChange ? "已连接" : "未连接";
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public sealed class MiaomiaoTrafficUsageConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not MiaomiaoSubscriptionInfo subscription || subscription.TransferEnable is not { } total)
+        {
+            return "暂无流量数据";
+        }
+
+        var used = MiaomiaoTrafficPolicy.ToGigabytes(subscription.UploadBytes ?? 0)
+            + MiaomiaoTrafficPolicy.ToGigabytes(subscription.DownloadBytes ?? 0);
+        return $"已用 {MiaomiaoTrafficPolicy.FormatGigabytes(used)} · 共 {MiaomiaoTrafficPolicy.FormatGigabytes(MiaomiaoTrafficPolicy.ToGigabytes(total))}";
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public sealed class MiaomiaoUsageProgressConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not MiaomiaoSubscriptionInfo subscription || subscription.TransferEnable is not { } total || total <= 0)
+        {
+            return 0d;
+        }
+
+        var used = MiaomiaoTrafficPolicy.ToGigabytes(subscription.UploadBytes ?? 0L)
+            + MiaomiaoTrafficPolicy.ToGigabytes(subscription.DownloadBytes ?? 0L);
+        var normalizedTotal = MiaomiaoTrafficPolicy.ToGigabytes(total);
+        return normalizedTotal <= 0m
+            ? 0d
+            : Math.Clamp((double)(used / normalizedTotal * 100m), 0d, 100d);
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public sealed class MiaomiaoExpirySummaryConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not long timestamp || timestamp <= 0)
+        {
+            return "长期有效";
+        }
+
+        try
+        {
+            return DateTimeOffset.FromUnixTimeSeconds(timestamp).ToLocalTime().ToString("yyyy-MM-dd", culture);
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            return "长期有效";
+        }
+    }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
         => throw new NotSupportedException();

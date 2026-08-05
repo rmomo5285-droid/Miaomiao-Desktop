@@ -7,10 +7,10 @@
             <SolidColorBrush x:Key="MiaomiaoBorderBrush" Color="#E2E5E8" />
             <SolidColorBrush x:Key="MiaomiaoForegroundBrush" Color="#161819" />
             <SolidColorBrush x:Key="MiaomiaoMutedForegroundBrush" Color="#676D72" />
-            <SolidColorBrush x:Key="MiaomiaoSidebarBrush" Color="#101828" />
-            <SolidColorBrush x:Key="MiaomiaoSidebarSurfaceBrush" Color="#22304A" />
-            <SolidColorBrush x:Key="MiaomiaoSidebarForegroundBrush" Color="#F8FAFC" />
-            <SolidColorBrush x:Key="MiaomiaoNavForegroundBrush" Color="#B9C4D4" />
+            <SolidColorBrush x:Key="MiaomiaoSidebarBrush" Color="#FFFFFF" />
+            <SolidColorBrush x:Key="MiaomiaoSidebarSurfaceBrush" Color="#EEF4FF" />
+            <SolidColorBrush x:Key="MiaomiaoSidebarForegroundBrush" Color="#24384A" />
+            <SolidColorBrush x:Key="MiaomiaoNavForegroundBrush" Color="#657585" />
             <SolidColorBrush x:Key="MiaomiaoPrimaryBrush" Color="#2563EB" />
             <SolidColorBrush x:Key="MiaomiaoPrimaryHoverBrush" Color="#1D4ED8" />
             <SolidColorBrush x:Key="MiaomiaoPrimarySoftBrush" Color="#EAF1FF" />
@@ -22,6 +22,10 @@
             <SolidColorBrush x:Key="MiaomiaoHeroMutedBrush" Color="#AEB7C5" />
             <SolidColorBrush x:Key="MiaomiaoConnectionSurfaceBrush" Color="#F7FAFF" />
             <SolidColorBrush x:Key="MiaomiaoConnectionBorderBrush" Color="#DDE6F8" />
+            <LinearGradientBrush x:Key="MiaomiaoAccentGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%"><GradientStop Color="#0D9B87" Offset="0" /><GradientStop Color="#2E6FE4" Offset="1" /></LinearGradientBrush>
+            <LinearGradientBrush x:Key="MiaomiaoAccentHoverBrush" StartPoint="0%,0%" EndPoint="100%,100%"><GradientStop Color="#0B8C7C" Offset="0" /><GradientStop Color="#255FCE" Offset="1" /></LinearGradientBrush>
+            <SolidColorBrush x:Key="MiaomiaoPowerHaloOuterBrush" Color="#BDDCD8" />
+            <SolidColorBrush x:Key="MiaomiaoPowerHaloInnerBrush" Color="#DDF0ED" />
             <SolidColorBrush x:Key="MiaomiaoWarningBrush" Color="#D94343" />
             <SolidColorBrush x:Key="MiaomiaoWarningSoftBrush" Color="#FDEAEA" />
         </ResourceDictionary>
@@ -32,10 +36,10 @@
             <SolidColorBrush x:Key="MiaomiaoBorderBrush" Color="#32373C" />
             <SolidColorBrush x:Key="MiaomiaoForegroundBrush" Color="#F5F6F7" />
             <SolidColorBrush x:Key="MiaomiaoMutedForegroundBrush" Color="#A9AFB4" />
-            <SolidColorBrush x:Key="MiaomiaoSidebarBrush" Color="#0B0F18" />
-            <SolidColorBrush x:Key="MiaomiaoSidebarSurfaceBrush" Color="#1B2B47" />
-            <SolidColorBrush x:Key="MiaomiaoSidebarForegroundBrush" Color="#F5F6F7" />
-            <SolidColorBrush x:Key="MiaomiaoNavForegroundBrush" Color="#9FA5AA" />
+            <SolidColorBrush x:Key="MiaomiaoSidebarBrush" Color="#151F25" />
+            <SolidColorBrush x:Key="MiaomiaoSidebarSurfaceBrush" Color="#21313E" />
+            <SolidColorBrush x:Key="MiaomiaoSidebarForegroundBrush" Color="#EDF5F6" />
+            <SolidColorBrush x:Key="MiaomiaoNavForegroundBrush" Color="#9BABB2" />
             <SolidColorBrush x:Key="MiaomiaoPrimaryBrush" Color="#6EA0FF" />
             <SolidColorBrush x:Key="MiaomiaoPrimaryHoverBrush" Color="#8BB3FF" />
             <SolidColorBrush x:Key="MiaomiaoPrimarySoftBrush" Color="#1C3158" />
@@ -47,6 +51,10 @@
             <SolidColorBrush x:Key="MiaomiaoHeroMutedBrush" Color="#AEB7C5" />
             <SolidColorBrush x:Key="MiaomiaoConnectionSurfaceBrush" Color="#161D2C" />
             <SolidColorBrush x:Key="MiaomiaoConnectionBorderBrush" Color="#2E3C59" />
+            <LinearGradientBrush x:Key="MiaomiaoAccentGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%"><GradientStop Color="#1B8F80" Offset="0" /><GradientStop Color="#4F7FDA" Offset="1" /></LinearGradientBrush>
+            <LinearGradientBrush x:Key="MiaomiaoAccentHoverBrush" StartPoint="0%,0%" EndPoint="100%,100%"><GradientStop Color="#258F82" Offset="0" /><GradientStop Color="#6797EE" Offset="1" /></LinearGradientBrush>
+            <SolidColorBrush x:Key="MiaomiaoPowerHaloOuterBrush" Color="#38605A" />
+            <SolidColorBrush x:Key="MiaomiaoPowerHaloInnerBrush" Color="#25453F" />
             <SolidColorBrush x:Key="MiaomiaoWarningBrush" Color="#FF7777" />
             <SolidColorBrush x:Key="MiaomiaoWarningSoftBrush" Color="#442527" />
         </ResourceDictionary>
@@ -58,10 +66,10 @@
     <SolidColorBrush x:Key="MiaomiaoBorderBrush" Color="#E2E5E8" />
     <SolidColorBrush x:Key="MiaomiaoForegroundBrush" Color="#161819" />
     <SolidColorBrush x:Key="MiaomiaoMutedForegroundBrush" Color="#676D72" />
-    <SolidColorBrush x:Key="MiaomiaoSidebarBrush" Color="#101828" />
-    <SolidColorBrush x:Key="MiaomiaoSidebarSurfaceBrush" Color="#22304A" />
-    <SolidColorBrush x:Key="MiaomiaoSidebarForegroundBrush" Color="#F8FAFC" />
-    <SolidColorBrush x:Key="MiaomiaoNavForegroundBrush" Color="#B9C4D4" />
+    <SolidColorBrush x:Key="MiaomiaoSidebarBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="MiaomiaoSidebarSurfaceBrush" Color="#EEF4FF" />
+    <SolidColorBrush x:Key="MiaomiaoSidebarForegroundBrush" Color="#24384A" />
+    <SolidColorBrush x:Key="MiaomiaoNavForegroundBrush" Color="#657585" />
     <SolidColorBrush x:Key="MiaomiaoPrimaryBrush" Color="#2563EB" />
     <SolidColorBrush x:Key="MiaomiaoPrimaryHoverBrush" Color="#1D4ED8" />
     <SolidColorBrush x:Key="MiaomiaoPrimarySoftBrush" Color="#EAF1FF" />
@@ -73,6 +81,10 @@
     <SolidColorBrush x:Key="MiaomiaoHeroMutedBrush" Color="#AEB7C5" />
     <SolidColorBrush x:Key="MiaomiaoConnectionSurfaceBrush" Color="#F7FAFF" />
     <SolidColorBrush x:Key="MiaomiaoConnectionBorderBrush" Color="#DDE6F8" />
+    <LinearGradientBrush x:Key="MiaomiaoAccentGradientBrush" StartPoint="0%,0%" EndPoint="100%,100%"><GradientStop Color="#0D9B87" Offset="0" /><GradientStop Color="#2E6FE4" Offset="1" /></LinearGradientBrush>
+    <LinearGradientBrush x:Key="MiaomiaoAccentHoverBrush" StartPoint="0%,0%" EndPoint="100%,100%"><GradientStop Color="#0B8C7C" Offset="0" /><GradientStop Color="#255FCE" Offset="1" /></LinearGradientBrush>
+    <SolidColorBrush x:Key="MiaomiaoPowerHaloOuterBrush" Color="#BDDCD8" />
+    <SolidColorBrush x:Key="MiaomiaoPowerHaloInnerBrush" Color="#DDF0ED" />
     <SolidColorBrush x:Key="MiaomiaoWarningBrush" Color="#D94343" />
     <SolidColorBrush x:Key="MiaomiaoWarningSoftBrush" Color="#FDEAEA" />
     <SolidColorBrush x:Key="MiaomiaoOnPrimaryBrush" Color="#FFFFFF" />
