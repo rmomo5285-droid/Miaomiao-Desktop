@@ -11,9 +11,10 @@ target is pinned. Never point an entry at a branch URL, a `latest` URL, or a
 mutable artifact.
 
 Packaging is designed for GitHub Actions. CI installs the exact .NET SDK
-version, builds the checked-out `GITHUB_SHA`, stages the locked core, signs the
-platform bundle, and only then creates release archives. Do not use these
-scripts to publish locally built binaries.
+version, builds the checked-out `GITHUB_SHA`, stages the locked core, and only
+then creates release archives. The release job signs every finished archive
+with the Miaomiao GPG release key. Do not use these scripts to publish locally
+built binaries.
 
 The release validation job also runs `branding/verify-orange-icons.sh`. Regenerate
 icons with `branding/generate-orange-icons.sh` and complete installed-app visual
@@ -28,34 +29,22 @@ equivalent or newer glibc baseline; older systems are not claimed as supported.
 Run `.github/workflows/release-desktop.yml` with a stable tag such as `v1.2.3`,
 or push that tag. The workflow publishes only the Avalonia desktop client:
 
-- Windows x64 and arm64 ZIP archives with Authenticode-signed `Miaomiao.exe`
-  and `MiaomiaoHelper.exe`;
-- notarized and stapled macOS x64 and arm64 DMGs containing `Miaomiao.app`;
+- Windows x64 and arm64 ZIP archives;
+- macOS x64 and arm64 DMGs containing `Miaomiao.app`;
 - Linux x64 and arm64 DEB and RPM packages;
 - `SHA256SUMS`, an armored signature for it, and detached GPG signatures for
-  every release file.
+  every release file, plus the Miaomiao GPG public key.
 
-There is no unsigned release fallback. Configure these repository secrets:
+Configure these repository secrets:
 
-- `MIAOMIAO_WINDOWS_CERT_PFX_BASE64`
-- `MIAOMIAO_WINDOWS_CERT_PASSWORD`
-- `MIAOMIAO_WINDOWS_CERT_SHA256`
-- `MIAOMIAO_MACOS_CERT_P12_BASE64`
-- `MIAOMIAO_MACOS_CERT_PASSWORD`
-- `MIAOMIAO_MACOS_SIGN_IDENTITY`
-- `MIAOMIAO_MACOS_NOTARY_APPLE_ID`
-- `MIAOMIAO_MACOS_NOTARY_TEAM_ID`
-- `MIAOMIAO_MACOS_NOTARY_APP_PASSWORD`
 - `MIAOMIAO_RELEASE_GPG_PRIVATE_KEY`
 - `MIAOMIAO_RELEASE_GPG_FINGERPRINT`
 - `MIAOMIAO_RELEASE_GPG_PASSPHRASE`
 
-`MIAOMIAO_WINDOWS_CERT_SHA256` is the SHA-256 fingerprint of the end-entity
-certificate, not the PFX file. The fingerprint pins the exact Authenticode
-publisher certificate; its subject is the certificate holder's verified legal
-identity and does not need to match the product name. The macOS identity must
-be the exact Apple Developer ID Application identity imported from the P12 and
-must match the configured notary Team ID.
+This follows the upstream v2rayN release model: detached GPG signatures verify
+the downloaded files, but they are not Windows Authenticode signatures or Apple
+Developer ID notarization. Windows SmartScreen and macOS Gatekeeper can
+therefore show an unrecognized-developer warning on first launch.
 
 Every installed application directory contains `SOURCE-COMMIT`, `SOURCE-URL`,
 `LICENSE`, `THIRD_PARTY_NOTICES.md`, the bundled third-party license texts, and

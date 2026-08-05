@@ -23,11 +23,10 @@
 | macOS | x64, arm64 | DMG |
 | Linux | x64, arm64 | DEB, RPM |
 
-正式安装包只通过 [GitHub Actions](.github/workflows/release-desktop.yml) 构建。稳定版发布要求：
-
-- Windows 安装包使用受信任的 Authenticode 代码签名证书，并固定校验证书 SHA-256 指纹；
-- macOS 应用使用与公证 Team ID 一致的 Developer ID Application 证书，并完成公证与装订；
-- 所有发布文件生成 SHA-256 清单和喵喵发布密钥的 GPG 签名。
+正式安装包只通过 [GitHub Actions](.github/workflows/release-desktop.yml) 构建。发布方式与
+v2rayN 上游一致：所有平台安装包均生成喵喵发布密钥的 GPG 分离签名，并同时发布公钥和
+`SHA256SUMS` 校验清单。Windows 安装包不包含 Authenticode 签名，macOS 安装包不包含
+Apple Developer ID 签名与公证票据，首次运行时可能显示系统安全提示。
 
 ## Orange 图标
 
