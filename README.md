@@ -25,8 +25,8 @@
 
 正式安装包只通过 [GitHub Actions](.github/workflows/release-desktop.yml) 构建。稳定版发布要求：
 
-- Windows 安装包使用主题包含 `Miaomiao` 的代码签名证书；
-- macOS 应用使用 `Miaomiao` 品牌的 Developer ID，并完成公证；
+- Windows 安装包使用受信任的 Authenticode 代码签名证书，并固定校验证书 SHA-256 指纹；
+- macOS 应用使用与公证 Team ID 一致的 Developer ID Application 证书，并完成公证与装订；
 - 所有发布文件生成 SHA-256 清单和喵喵发布密钥的 GPG 签名。
 
 ## Orange 图标
