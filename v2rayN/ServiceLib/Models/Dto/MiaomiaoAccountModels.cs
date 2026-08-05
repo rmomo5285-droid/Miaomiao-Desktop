@@ -330,7 +330,7 @@ public static class MiaomiaoDisplayPolicy
     };
 }
 
-internal static class MiaomiaoTrafficPolicy
+public static class MiaomiaoTrafficPolicy
 {
     private const decimal BytesPerGigabyte = 1024m * 1024m * 1024m;
     private const decimal LegacyScaleThreshold = BytesPerGigabyte * 1024m * 64m;
