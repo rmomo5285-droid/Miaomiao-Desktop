@@ -175,76 +175,6 @@ jobs:
             exit 1
           }
 
-      - name: Authenticode sign Miaomiao executables
-        shell: pwsh
-        env:
-          CERT_PFX_BASE64: ${{ secrets.MIAOMIAO_WINDOWS_CERT_PFX_BASE64 }}
-          CERT_PASSWORD: ${{ secrets.MIAOMIAO_WINDOWS_CERT_PASSWORD }}
-          CERT_SHA256: ${{ secrets.MIAOMIAO_WINDOWS_CERT_SHA256 }}
-          ARCH: ${{ matrix.arch }}
-        run: |
-          $ErrorActionPreference = 'Stop'
-          if ([string]::IsNullOrWhiteSpace($env:CERT_PFX_BASE64) -or
-              [string]::IsNullOrWhiteSpace($env:CERT_PASSWORD) -or
-              [string]::IsNullOrWhiteSpace($env:CERT_SHA256)) {
-            throw 'Miaomiao Windows signing secrets are required.'
-          }
-
-          $pfxPath = Join-Path $env:RUNNER_TEMP 'miaomiao-release.pfx'
-          $bytes = [Convert]::FromBase64String(($env:CERT_PFX_BASE64 -replace '\s', ''))
-          [IO.File]::WriteAllBytes($pfxPath, $bytes)
-          $password = ConvertTo-SecureString $env:CERT_PASSWORD -AsPlainText -Force
-          $pfxData = Get-PfxData -FilePath $pfxPath -Password $password
-          $cert = @($pfxData.EndEntityCertificates)[0]
-          if (-not $cert) { throw 'The PFX does not contain an end-entity signing certificate.' }
-          $expected = ($env:CERT_SHA256 -replace '[^0-9A-Fa-f]', '').ToUpperInvariant()
-          if ($expected -notmatch '^[0-9A-F]{64}$') {
-            throw 'MIAOMIAO_WINDOWS_CERT_SHA256 must contain one SHA-256 fingerprint.'
-          }
-          $actual = $cert.GetCertHashString('SHA256').ToUpperInvariant()
-          if ($actual -ne $expected) {
-            throw "Windows certificate SHA-256 mismatch: expected $expected, got $actual"
-          }
-          $now = Get-Date
-          if ($now -lt $cert.NotBefore -or $now -gt $cert.NotAfter) {
-            throw "The Windows signing certificate is outside its validity period: $($cert.NotBefore) - $($cert.NotAfter)"
-          }
-
-          $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" |
-            Sort-Object FullName -Descending | Select-Object -First 1
-          if (-not $signtool) { throw 'signtool.exe was not found.' }
-          $root = Join-Path $env:GITHUB_WORKSPACE "stage/Miaomiao-windows-$env:ARCH"
-          $ownedExecutables = @(
-            (Join-Path $root 'Miaomiao.exe'),
-            (Join-Path $root 'MiaomiaoHelper.exe')
-          ) | Where-Object { Test-Path -LiteralPath $_ }
-          if ($ownedExecutables.Count -eq 0) { throw 'No Miaomiao executable was found to sign.' }
-
-          foreach ($file in $ownedExecutables) {
-            & $signtool.FullName sign /f $pfxPath /p $env:CERT_PASSWORD /fd SHA256 `
-              /tr http://timestamp.digicert.com /td SHA256 $file
-            if ($LASTEXITCODE -ne 0) { throw "signtool failed for $file" }
-            & $signtool.FullName verify /pa /all /v $file
-            if ($LASTEXITCODE -ne 0) { throw "Authenticode verification failed for $file" }
-            $signature = Get-AuthenticodeSignature -LiteralPath $file
-            $signedHash = $signature.SignerCertificate.GetCertHashString('SHA256').ToUpperInvariant()
-            if ($signature.Status -ne 'Valid' -or $signedHash -ne $expected) {
-              throw "Unexpected Authenticode signer or status for $file"
-            }
-            if (-not $signature.TimeStamperCertificate) {
-              throw "Authenticode timestamp is missing for $file"
-            }
-          }
-
-      - name: Remove temporary Windows signing certificate
-        if: always()
-        shell: pwsh
-        run: |
-          $pfxPath = Join-Path $env:RUNNER_TEMP 'miaomiao-release.pfx'
-          if (Test-Path -LiteralPath $pfxPath) {
-            Remove-Item -LiteralPath $pfxPath -Force
-          }
-
       - name: Create Windows archive
         shell: pwsh
         env:
@@ -380,88 +310,21 @@ jobs:
           PLIST
           plutil -lint "$app/Contents/Info.plist"
 
-      - name: Sign, notarize, and staple macOS disk image
+      - name: Create macOS disk image
         shell: bash
         env:
-          CERT_P12_BASE64: ${{ secrets.MIAOMIAO_MACOS_CERT_P12_BASE64 }}
-          CERT_PASSWORD: ${{ secrets.MIAOMIAO_MACOS_CERT_PASSWORD }}
-          SIGN_IDENTITY: ${{ secrets.MIAOMIAO_MACOS_SIGN_IDENTITY }}
-          NOTARY_APPLE_ID: ${{ secrets.MIAOMIAO_MACOS_NOTARY_APPLE_ID }}
-          NOTARY_TEAM_ID: ${{ secrets.MIAOMIAO_MACOS_NOTARY_TEAM_ID }}
-          NOTARY_PASSWORD: ${{ secrets.MIAOMIAO_MACOS_NOTARY_APP_PASSWORD }}
           VERSION: ${{ needs.validate.outputs.version }}
           ARCH: ${{ matrix.arch }}
         run: |
           set -euo pipefail
-          for value in CERT_P12_BASE64 CERT_PASSWORD SIGN_IDENTITY NOTARY_APPLE_ID NOTARY_TEAM_ID NOTARY_PASSWORD; do
-            [[ -n "${!value:-}" ]] || { echo "Missing macOS signing secret: $value" >&2; exit 1; }
-          done
-          case "$SIGN_IDENTITY" in
-            "Developer ID Application: "*) ;;
-            *)
-              echo 'MIAOMIAO_MACOS_SIGN_IDENTITY must be an Apple Developer ID Application identity.' >&2
-              exit 1
-              ;;
-          esac
-
-          keychain="$RUNNER_TEMP/miaomiao-signing.keychain-db"
-          keychain_password="$(openssl rand -hex 32)"
-          cert="$RUNNER_TEMP/miaomiao-release.p12"
-          printf '%s' "$CERT_P12_BASE64" | base64 -D > "$cert"
-          security create-keychain -p "$keychain_password" "$keychain"
-          printf 'MIAOMIAO_KEYCHAIN=%s\n' "$keychain" >> "$GITHUB_ENV"
-          printf 'MIAOMIAO_CERT_PATH=%s\n' "$cert" >> "$GITHUB_ENV"
-          security set-keychain-settings -lut 21600 "$keychain"
-          security unlock-keychain -p "$keychain_password" "$keychain"
-          security import "$cert" -k "$keychain" -P "$CERT_PASSWORD" \
-            -T /usr/bin/codesign -T /usr/bin/security
-          security set-key-partition-list -S apple-tool:,apple:,codesign: \
-            -s -k "$keychain_password" "$keychain"
-          security list-keychains -d user -s "$keychain"
-          security find-identity -v -p codesigning "$keychain" | grep -F "$SIGN_IDENTITY"
-
           app="$GITHUB_WORKSPACE/stage/Miaomiao.app"
-          while IFS= read -r -d '' file_path; do
-            if file -b "$file_path" | grep -q 'Mach-O'; then
-              codesign --force --options runtime --timestamp \
-                --keychain "$keychain" --sign "$SIGN_IDENTITY" "$file_path"
-            fi
-          done < <(find "$app/Contents/MacOS" -type f -print0)
-          codesign --force --options runtime --timestamp --keychain "$keychain" \
-            --sign "$SIGN_IDENTITY" "$app"
-          codesign --verify --deep --strict --verbose=2 "$app"
-          codesign_output="$(codesign -dvvv "$app" 2>&1)"
-          actual_team_id="$(printf '%s\n' "$codesign_output" | sed -n 's/^TeamIdentifier=//p' | head -n 1)"
-          [[ "$actual_team_id" == "$NOTARY_TEAM_ID" ]] || {
-            echo "macOS signing Team ID mismatch: expected $NOTARY_TEAM_ID, got ${actual_team_id:-missing}" >&2
-            exit 1
-          }
-
           payload="$GITHUB_WORKSPACE/stage/dmg"
           mkdir -p "$payload"
           cp -a "$app" "$payload/Miaomiao.app"
           ln -s /Applications "$payload/Applications"
           dmg="$GITHUB_WORKSPACE/Miaomiao-$VERSION-macos-$ARCH.dmg"
           hdiutil create -volname Miaomiao -srcfolder "$payload" -format UDZO "$dmg"
-          codesign --force --timestamp --keychain "$keychain" \
-            --sign "$SIGN_IDENTITY" "$dmg"
-          codesign --verify --strict --verbose=2 "$dmg"
-          xcrun notarytool submit "$dmg" --apple-id "$NOTARY_APPLE_ID" \
-            --team-id "$NOTARY_TEAM_ID" --password "$NOTARY_PASSWORD" --wait
-          xcrun stapler staple "$dmg"
-          xcrun stapler validate "$dmg"
-          spctl --assess --type open --context context:primary-signature --verbose=4 "$dmg"
-
-      - name: Remove temporary signing keychain
-        if: always()
-        shell: bash
-        run: |
-          if [[ -n "${MIAOMIAO_KEYCHAIN:-}" && -f "$MIAOMIAO_KEYCHAIN" ]]; then
-            security delete-keychain "$MIAOMIAO_KEYCHAIN"
-          fi
-          if [[ -n "${MIAOMIAO_CERT_PATH:-}" ]]; then
-            rm -f "$MIAOMIAO_CERT_PATH"
-          fi
+          [[ -s "$dmg" ]]
 
       - name: Upload macOS artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -572,7 +435,7 @@ jobs:
           retention-days: 14
 
   release:
-    name: Publish signed release
+    name: Publish GPG-signed release
     needs: [validate, windows, macos, linux-deb, linux-rpm]
     runs-on: ubuntu-24.04
     permissions:
