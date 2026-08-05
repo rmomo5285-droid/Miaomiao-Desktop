@@ -205,8 +205,9 @@ jobs:
           if ($actual -ne $expected) {
             throw "Windows certificate SHA-256 mismatch: expected $expected, got $actual"
           }
-          if ($cert.Subject -notmatch '(?i)Miaomiao') {
-            throw "The Windows publisher certificate is not branded Miaomiao: $($cert.Subject)"
+          $now = Get-Date
+          if ($now -lt $cert.NotBefore -or $now -gt $cert.NotAfter) {
+            throw "The Windows signing certificate is outside its validity period: $($cert.NotBefore) - $($cert.NotAfter)"
           }
 
           $signtool = Get-ChildItem "${env:ProgramFiles(x86)}\Windows Kits\10\bin\*\x64\signtool.exe" |
@@ -395,10 +396,13 @@ jobs:
           for value in CERT_P12_BASE64 CERT_PASSWORD SIGN_IDENTITY NOTARY_APPLE_ID NOTARY_TEAM_ID NOTARY_PASSWORD; do
             [[ -n "${!value:-}" ]] || { echo "Missing macOS signing secret: $value" >&2; exit 1; }
           done
-          printf '%s' "$SIGN_IDENTITY" | grep -Fqi Miaomiao || {
-            echo 'MIAOMIAO_MACOS_SIGN_IDENTITY must be a Miaomiao-branded Developer ID identity.' >&2
-            exit 1
-          }
+          case "$SIGN_IDENTITY" in
+            "Developer ID Application: "*) ;;
+            *)
+              echo 'MIAOMIAO_MACOS_SIGN_IDENTITY must be an Apple Developer ID Application identity.' >&2
+              exit 1
+              ;;
+          esac
 
           keychain="$RUNNER_TEMP/miaomiao-signing.keychain-db"
           keychain_password="$(openssl rand -hex 32)"
@@ -426,6 +430,12 @@ jobs:
           codesign --force --options runtime --timestamp --keychain "$keychain" \
             --sign "$SIGN_IDENTITY" "$app"
           codesign --verify --deep --strict --verbose=2 "$app"
+          codesign_output="$(codesign -dvvv "$app" 2>&1)"
+          actual_team_id="$(printf '%s\n' "$codesign_output" | sed -n 's/^TeamIdentifier=//p' | head -n 1)"
+          [[ "$actual_team_id" == "$NOTARY_TEAM_ID" ]] || {
+            echo "macOS signing Team ID mismatch: expected $NOTARY_TEAM_ID, got ${actual_team_id:-missing}" >&2
+            exit 1
+          }
 
           payload="$GITHUB_WORKSPACE/stage/dmg"
           mkdir -p "$payload"
@@ -440,6 +450,7 @@ jobs:
             --team-id "$NOTARY_TEAM_ID" --password "$NOTARY_PASSWORD" --wait
           xcrun stapler staple "$dmg"
           xcrun stapler validate "$dmg"
+          spctl --assess --type open --context context:primary-signature --verbose=4 "$dmg"
 
       - name: Remove temporary signing keychain
         if: always()

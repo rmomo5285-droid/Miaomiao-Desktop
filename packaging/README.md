@@ -51,10 +51,11 @@ There is no unsigned release fallback. Configure these repository secrets:
 - `MIAOMIAO_RELEASE_GPG_PASSPHRASE`
 
 `MIAOMIAO_WINDOWS_CERT_SHA256` is the SHA-256 fingerprint of the end-entity
-certificate, not the PFX file. Its certificate subject must contain
-`Miaomiao`; this prevents accidentally shipping another publisher's signature.
-The macOS identity must be an Apple Developer ID Application certificate that
-belongs to the configured notary team.
+certificate, not the PFX file. The fingerprint pins the exact Authenticode
+publisher certificate; its subject is the certificate holder's verified legal
+identity and does not need to match the product name. The macOS identity must
+be the exact Apple Developer ID Application identity imported from the P12 and
+must match the configured notary Team ID.
 
 Every installed application directory contains `SOURCE-COMMIT`, `SOURCE-URL`,
 `LICENSE`, `THIRD_PARTY_NOTICES.md`, the bundled third-party license texts, and
