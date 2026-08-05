@@ -173,6 +173,30 @@ public class MiaomiaoAccountPolicyTests
     }
 
     [Fact]
+    public void TrafficPolicy_FormatsNormalByteTotalsAsGigabytes()
+    {
+        var subscription = new MiaomiaoSubscriptionInfo
+        {
+            TransferEnable = 10L * 1024 * 1024 * 1024,
+            UploadBytes = 1L * 1024 * 1024 * 1024,
+            DownloadBytes = 1L * 1024 * 1024 * 1024
+        };
+
+        Assert.Equal("8 GB", MiaomiaoTrafficPolicy.FormatRemaining(subscription));
+    }
+
+    [Fact]
+    public void TrafficPolicy_FormatsLegacyPanelScaleAsGigabytes()
+    {
+        var subscription = new MiaomiaoSubscriptionInfo
+        {
+            TransferEnable = (long)(800.7m * 1024m * 1024m * 1024m * 1024m)
+        };
+
+        Assert.Equal("800.7 GB", MiaomiaoTrafficPolicy.FormatRemaining(subscription));
+    }
+
+    [Fact]
     public void ManagedSubscriptionPolicy_RecognizesOnlyTheProtectedMarker()
     {
         Assert.True(MiaomiaoManagedSubscriptionPolicy.IsManaged(new SubItem

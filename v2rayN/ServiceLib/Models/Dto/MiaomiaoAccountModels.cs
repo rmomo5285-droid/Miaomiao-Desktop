@@ -330,6 +330,40 @@ public static class MiaomiaoDisplayPolicy
     };
 }
 
+internal static class MiaomiaoTrafficPolicy
+{
+    private const decimal BytesPerGigabyte = 1024m * 1024m * 1024m;
+    private const decimal LegacyScaleThreshold = BytesPerGigabyte * 1024m * 64m;
+
+    public static decimal ToGigabytes(long value)
+    {
+        if (value <= 0)
+        {
+            return 0m;
+        }
+
+        // Some XBoard installations expose subscription totals one binary scale too high.
+        return value >= (double)LegacyScaleThreshold
+            ? value / (BytesPerGigabyte * 1024m)
+            : value / BytesPerGigabyte;
+    }
+
+    public static string FormatGigabytes(decimal gigabytes)
+        => $"{Math.Max(0m, gigabytes):0.##} GB";
+
+    public static string FormatRemaining(MiaomiaoSubscriptionInfo subscription)
+    {
+        if (subscription.TransferEnable is not { } total)
+        {
+            return "-";
+        }
+
+        var used = ToGigabytes(subscription.UploadBytes ?? 0)
+            + ToGigabytes(subscription.DownloadBytes ?? 0);
+        return FormatGigabytes(Math.Max(0m, ToGigabytes(total) - used));
+    }
+}
+
 internal static class MiaomiaoPricingPolicy
 {
     internal static MiaomiaoPriceSummary Calculate(

@@ -63,7 +63,9 @@ public sealed class MiaomiaoBytesConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
     {
-        return value is long bytes && bytes >= 0 ? Utils.HumanFy(bytes) : "-";
+        return value is long bytes && bytes >= 0
+            ? MiaomiaoTrafficPolicy.FormatGigabytes(MiaomiaoTrafficPolicy.ToGigabytes(bytes))
+            : "-";
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
@@ -81,8 +83,7 @@ public sealed class MiaomiaoRemainingBytesConverter : IValueConverter
             return "-";
         }
 
-        var used = Math.Max(0, (subscription.UploadBytes ?? 0) + (subscription.DownloadBytes ?? 0));
-        return Utils.HumanFy(Math.Max(0, total - used));
+        return MiaomiaoTrafficPolicy.FormatRemaining(subscription);
     }
 
     public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
