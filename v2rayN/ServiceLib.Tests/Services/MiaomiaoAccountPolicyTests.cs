@@ -85,6 +85,45 @@ public class MiaomiaoAccountPolicyTests
         Assert.Equal(expected, MiaomiaoDisplayPolicy.FormatOrderAmount((decimal)amount));
     }
 
+    [Fact]
+    public void PricingPolicy_AppliesFixedCouponThenBalance()
+    {
+        var summary = MiaomiaoPricingPolicy.Calculate(
+            10_000m,
+            new MiaomiaoCoupon { Type = 1, Value = 1_500m },
+            2_000m);
+
+        Assert.Equal(10_000m, summary.OriginalAmount);
+        Assert.Equal(1_500m, summary.DiscountAmount);
+        Assert.Equal(2_000m, summary.BalanceAmount);
+        Assert.Equal(6_500m, summary.PayableAmount);
+    }
+
+    [Fact]
+    public void PricingPolicy_AppliesPercentageCouponAndCapsBalance()
+    {
+        var summary = MiaomiaoPricingPolicy.Calculate(
+            8_000m,
+            new MiaomiaoCoupon { Type = 2, Value = 25m },
+            10_000m);
+
+        Assert.Equal(2_000m, summary.DiscountAmount);
+        Assert.Equal(6_000m, summary.BalanceAmount);
+        Assert.Equal(0m, summary.PayableAmount);
+    }
+
+    [Fact]
+    public void PricingPolicy_CapsOversizedCouponAtOriginalAmount()
+    {
+        var summary = MiaomiaoPricingPolicy.Calculate(
+            1_000m,
+            new MiaomiaoCoupon { Type = 1, Value = 9_999m },
+            0m);
+
+        Assert.Equal(1_000m, summary.DiscountAmount);
+        Assert.Equal(0m, summary.PayableAmount);
+    }
+
     [Theory]
     [InlineData(0, "待支付")]
     [InlineData(1, "处理中")]

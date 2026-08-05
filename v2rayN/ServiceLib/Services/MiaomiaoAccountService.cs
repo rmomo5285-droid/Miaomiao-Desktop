@@ -144,6 +144,31 @@ public sealed class MiaomiaoAccountService
         return DeserializeListData<MiaomiaoOrder>(document.RootElement);
     }
 
+    public async Task<MiaomiaoCoupon> CheckCouponAsync(
+        MiaomiaoCouponCheckRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        if (request.Code.IsNullOrEmpty() || request.Code.Length > 128 || request.PlanId <= 0)
+        {
+            throw new MiaomiaoApiException("优惠码参数不正确。");
+        }
+
+        using var document = await SendAsync(
+            HttpMethod.Post,
+            "/api/v1/user/coupon/check",
+            request,
+            true,
+            cancellationToken);
+        EnsureApiSuccess(document.RootElement);
+        var coupon = DeserializeData<MiaomiaoCoupon>(document.RootElement)
+            ?? throw new MiaomiaoApiException(GetMessage(document.RootElement) ?? "优惠码无效或已过期。");
+        if (coupon.Type is not (1 or 2) || coupon.Value <= 0)
+        {
+            throw new MiaomiaoApiException("优惠码无效或已过期。");
+        }
+        return coupon;
+    }
+
     public async Task<MiaomiaoOrder> GetOrderAsync(string tradeNo, CancellationToken cancellationToken = default)
     {
         ValidateTradeNo(tradeNo);

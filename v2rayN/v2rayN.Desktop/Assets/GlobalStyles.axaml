@@ -67,6 +67,13 @@
         <Setter Property="CornerRadius" Value="8" />
     </Style>
 
+    <Style Selector="Border.MiaomiaoAccentCard">
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoPrimarySoftBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource MiaomiaoPrimaryBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+
     <Style Selector="Button.MiaomiaoNav">
         <Setter Property="Height" Value="44" />
         <Setter Property="Margin" Value="10,3" />
@@ -122,8 +129,8 @@
     </Style>
 
     <Style Selector="ListBox.MiaomiaoPlanList > ListBoxItem">
-        <Setter Property="Margin" Value="0,0,0,8" />
-        <Setter Property="Padding" Value="12" />
+        <Setter Property="Margin" Value="0,0,0,10" />
+        <Setter Property="Padding" Value="16" />
         <Setter Property="Background" Value="{DynamicResource MiaomiaoSurfaceBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource MiaomiaoBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
@@ -133,6 +140,31 @@
     <Style Selector="ListBox.MiaomiaoPlanList > ListBoxItem:selected">
         <Setter Property="Background" Value="{DynamicResource MiaomiaoPrimarySoftBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource MiaomiaoPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="ListBox.MiaomiaoPlanList > ListBoxItem:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource MiaomiaoPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="ListBox.MiaomiaoPeriodList">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style Selector="ListBox.MiaomiaoPeriodList > ListBoxItem">
+        <Setter Property="MinWidth" Value="104" />
+        <Setter Property="Margin" Value="0,0,8,8" />
+        <Setter Property="Padding" Value="12,10" />
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource MiaomiaoBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+
+    <Style Selector="ListBox.MiaomiaoPeriodList > ListBoxItem:selected">
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoPrimarySoftBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource MiaomiaoPrimaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoPrimarySoftForegroundBrush}" />
     </Style>
 
     <Style Selector="Button.MiaomiaoConnect">
@@ -156,9 +188,16 @@
     </Style>
 
     <Style Selector="ListBox.MiaomiaoRouteList > ListBoxItem">
-        <Setter Property="Margin" Value="0,2" />
-        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="Margin" Value="0,3" />
+        <Setter Property="Padding" Value="14,9" />
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoSurfaceAltBrush}" />
+        <Setter Property="BorderBrush" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="1" />
         <Setter Property="CornerRadius" Value="6" />
+    </Style>
+
+    <Style Selector="ListBox.MiaomiaoRouteList > ListBoxItem:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource MiaomiaoPrimaryBrush}" />
     </Style>
 
     <Style Selector="ListBox.MiaomiaoRouteList > ListBoxItem:selected">

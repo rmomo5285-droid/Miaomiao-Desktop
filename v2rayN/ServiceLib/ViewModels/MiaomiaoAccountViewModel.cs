@@ -15,6 +15,7 @@ public partial class MiaomiaoAccountViewModel : MyReactiveObject
     public BulkObservableCollection<MiaomiaoNotice> Notices { get; } = [];
     public BulkObservableCollection<MiaomiaoOrder> Orders { get; } = [];
     public BulkObservableCollection<MiaomiaoPaymentMethod> PaymentMethods { get; } = [];
+    public BulkObservableCollection<MiaomiaoBillingPeriod> BillingPeriods { get; } = [];
 
     [Reactive]
     public partial string Email { get; set; } = string.Empty;
@@ -47,10 +48,43 @@ public partial class MiaomiaoAccountViewModel : MyReactiveObject
     public partial MiaomiaoPlan? SelectedPlan { get; set; }
 
     [Reactive]
+    public partial MiaomiaoBillingPeriod? SelectedBillingPeriod { get; set; }
+
+    [Reactive]
     public partial string SelectedPeriod { get; set; } = "month_price";
 
     [Reactive]
     public partial string CouponCode { get; set; } = string.Empty;
+
+    [Reactive]
+    public partial bool IsCouponApplied { get; set; }
+
+    [Reactive]
+    public partial bool IsCouponRejected { get; set; }
+
+    [Reactive]
+    public partial string? CouponStatusMessage { get; set; }
+
+    [Reactive]
+    public partial MiaomiaoCoupon? AppliedCoupon { get; set; }
+
+    [Reactive]
+    public partial string OriginalPriceText { get; set; } = "-";
+
+    [Reactive]
+    public partial string CouponDiscountText { get; set; } = "¥0.00";
+
+    [Reactive]
+    public partial string BalanceDeductionText { get; set; } = "¥0.00";
+
+    [Reactive]
+    public partial string PayableAmountText { get; set; } = "-";
+
+    [Reactive]
+    public partial string BalanceText { get; set; } = "¥0.00";
+
+    [Reactive]
+    public partial bool HasPendingOrder { get; set; }
 
     [Reactive]
     public partial MiaomiaoPaymentMethod? SelectedPaymentMethod { get; set; }
@@ -68,6 +102,7 @@ public partial class MiaomiaoAccountViewModel : MyReactiveObject
     public ReactiveCommand<RxVoid, RxVoid> LogoutCmd { get; }
     public ReactiveCommand<RxVoid, RxVoid> RefreshCmd { get; }
     public ReactiveCommand<RxVoid, RxVoid> OpenRegistrationCmd { get; }
+    public ReactiveCommand<RxVoid, RxVoid> ValidateCouponCmd { get; }
     public ReactiveCommand<RxVoid, RxVoid> PurchaseCmd { get; }
     public ReactiveCommand<RxVoid, RxVoid> PayCmd { get; }
     public ReactiveCommand<RxVoid, RxVoid> OpenPaymentCmd { get; }
@@ -100,11 +135,23 @@ public partial class MiaomiaoAccountViewModel : MyReactiveObject
             x => x.SelectedPlan,
             x => x.SelectedPeriod,
             x => x.PendingTradeNo,
-            (loggedIn, busy, plan, period, tradeNo) => loggedIn
+            x => x.CouponCode,
+            x => x.IsCouponApplied,
+            (loggedIn, busy, plan, period, tradeNo, couponCode, couponApplied) => loggedIn
                 && !busy
                 && plan != null
                 && period.IsNotEmpty()
-                && tradeNo.IsNullOrEmpty());
+                && tradeNo.IsNullOrEmpty()
+                && (couponCode.IsNullOrEmpty() || couponApplied));
+        var canValidateCoupon = this.WhenAnyValue(
+            x => x.IsLoggedIn,
+            x => x.IsBusy,
+            x => x.SelectedPlan,
+            x => x.CouponCode,
+            (loggedIn, busy, plan, couponCode) => loggedIn
+                && !busy
+                && plan != null
+                && couponCode.IsNotEmpty());
         var canPay = this.WhenAnyValue(
             x => x.IsLoggedIn,
             x => x.IsBusy,
@@ -139,6 +186,7 @@ public partial class MiaomiaoAccountViewModel : MyReactiveObject
         LogoutCmd = ReactiveCommand.CreateFromTask(LogoutAsync);
         RefreshCmd = ReactiveCommand.CreateFromTask(RefreshAsync, canRefresh);
         OpenRegistrationCmd = ReactiveCommand.CreateFromTask(OpenRegistrationAsync);
+        ValidateCouponCmd = ReactiveCommand.CreateFromTask(ValidateCouponAsync, canValidateCoupon);
         PurchaseCmd = ReactiveCommand.CreateFromTask(PurchaseAsync, canPurchase);
         PayCmd = ReactiveCommand.CreateFromTask(PayAsync, canPay);
         OpenPaymentCmd = ReactiveCommand.CreateFromTask(OpenPaymentAsync, canOpenPayment);
@@ -151,6 +199,7 @@ public partial class MiaomiaoAccountViewModel : MyReactiveObject
                      LogoutCmd,
                      RefreshCmd,
                      OpenRegistrationCmd,
+                     ValidateCouponCmd,
                      PurchaseCmd,
                      PayCmd,
                      OpenPaymentCmd,
@@ -160,6 +209,22 @@ public partial class MiaomiaoAccountViewModel : MyReactiveObject
         {
             command.ThrownExceptions.Subscribe(HandleUnexpectedCommandError);
         }
+
+        this.WhenAnyValue(x => x.SelectedPlan)
+            .Subscribe(RebuildBillingPeriods);
+        this.WhenAnyValue(x => x.SelectedBillingPeriod)
+            .Subscribe(period =>
+            {
+                SelectedPeriod = period?.Key ?? string.Empty;
+                RecalculatePricing();
+            });
+        this.WhenAnyValue(x => x.CouponCode)
+            .Skip(1)
+            .Subscribe(_ => ResetCouponValidation());
+        this.WhenAnyValue(x => x.CurrentUser)
+            .Subscribe(_ => RecalculatePricing());
+        this.WhenAnyValue(x => x.PendingTradeNo)
+            .Subscribe(tradeNo => HasPendingOrder = tradeNo.IsNotEmpty());
     }
 
     public async Task<bool> SyncManagedSubscriptionAsync(bool forceUpdate = false)
@@ -369,10 +434,14 @@ public partial class MiaomiaoAccountViewModel : MyReactiveObject
             }
 
             var coupon = CouponCode.Trim();
+            if (coupon.IsNotEmpty() && !IsCouponApplied)
+            {
+                throw new MiaomiaoApiException("请先应用优惠码，或清空后继续购买。");
+            }
             PendingTradeNo = await _accountService.CreateOrderAsync(new(
                 SelectedPlan.Id,
                 SelectedPeriod,
-                coupon.IsNotEmpty() ? coupon : null));
+                IsCouponApplied ? coupon : null));
             PaymentUrl = null;
             CurrentPaymentStatus = new(MiaomiaoPaymentState.Pending, 0);
 
@@ -380,6 +449,35 @@ public partial class MiaomiaoAccountViewModel : MyReactiveObject
                 .Where(method => method.Show && method.IsAvailable));
             SelectedPaymentMethod = PaymentMethods.FirstOrDefault();
             StatusMessage = "订单已创建，请选择支付方式。";
+        });
+    }
+
+    private async Task ValidateCouponAsync()
+    {
+        await RunBusyAsync(async () =>
+        {
+            var code = CouponCode.Trim();
+            if (SelectedPlan == null || code.IsNullOrEmpty())
+            {
+                throw new MiaomiaoApiException("请先选择套餐并输入优惠码。");
+            }
+
+            IsCouponApplied = false;
+            IsCouponRejected = false;
+            CouponStatusMessage = null;
+            AppliedCoupon = null;
+            try
+            {
+                AppliedCoupon = await _accountService.CheckCouponAsync(new(code, SelectedPlan.Id));
+                IsCouponApplied = true;
+                CouponStatusMessage = MiaomiaoDisplayPolicy.FormatCoupon(AppliedCoupon);
+            }
+            catch (MiaomiaoApiException ex)
+            {
+                IsCouponRejected = true;
+                CouponStatusMessage = ex.Message;
+            }
+            RecalculatePricing();
         });
     }
 
@@ -675,10 +773,77 @@ public partial class MiaomiaoAccountViewModel : MyReactiveObject
         PendingTradeNo = null;
         PaymentUrl = null;
         CurrentPaymentStatus = null;
+        CouponCode = string.Empty;
+        ResetCouponValidation();
         Plans.Clear();
+        BillingPeriods.Clear();
         Notices.Clear();
         Orders.Clear();
         PaymentMethods.Clear();
+    }
+
+    private void RebuildBillingPeriods(MiaomiaoPlan? plan)
+    {
+        BillingPeriods.Clear();
+        ResetCouponValidation();
+        if (plan == null)
+        {
+            SelectedBillingPeriod = null;
+            return;
+        }
+
+        AddBillingPeriod("month_price", "月付", plan.MonthPrice);
+        AddBillingPeriod("quarter_price", "季付", plan.QuarterPrice);
+        AddBillingPeriod("half_year_price", "半年付", plan.HalfYearPrice);
+        AddBillingPeriod("year_price", "年付", plan.YearPrice);
+        AddBillingPeriod("two_year_price", "两年付", plan.TwoYearPrice);
+        AddBillingPeriod("three_year_price", "三年付", plan.ThreeYearPrice);
+        AddBillingPeriod("onetime_price", "一次性", plan.OneTimePrice);
+        SelectedBillingPeriod = BillingPeriods.FirstOrDefault();
+    }
+
+    private void AddBillingPeriod(string key, string label, decimal? price)
+    {
+        if (price is { } amount)
+        {
+            BillingPeriods.Add(new(key, label, amount));
+        }
+    }
+
+    private void ResetCouponValidation()
+    {
+        AppliedCoupon = null;
+        IsCouponApplied = false;
+        IsCouponRejected = false;
+        CouponStatusMessage = CouponCode.IsNotEmpty() ? "输入后点击应用" : null;
+        RecalculatePricing();
+    }
+
+    private void RecalculatePricing()
+    {
+        var price = SelectedPlan?.GetPrice(SelectedPeriod);
+        BalanceText = MiaomiaoDisplayPolicy.FormatOrderAmount(CurrentUser?.Balance ?? 0m);
+        if (price is not { } amount)
+        {
+            OriginalPriceText = "-";
+            CouponDiscountText = "¥0.00";
+            BalanceDeductionText = "¥0.00";
+            PayableAmountText = "-";
+            return;
+        }
+
+        var summary = MiaomiaoPricingPolicy.Calculate(
+            amount,
+            IsCouponApplied ? AppliedCoupon : null,
+            CurrentUser?.Balance ?? 0m);
+        OriginalPriceText = MiaomiaoDisplayPolicy.FormatOrderAmount(summary.OriginalAmount);
+        CouponDiscountText = summary.DiscountAmount > 0
+            ? $"-{MiaomiaoDisplayPolicy.FormatOrderAmount(summary.DiscountAmount)}"
+            : "¥0.00";
+        BalanceDeductionText = summary.BalanceAmount > 0
+            ? $"-{MiaomiaoDisplayPolicy.FormatOrderAmount(summary.BalanceAmount)}"
+            : "¥0.00";
+        PayableAmountText = MiaomiaoDisplayPolicy.FormatOrderAmount(summary.PayableAmount);
     }
 
     private async Task DetachManagedSubscriptionAsync()
