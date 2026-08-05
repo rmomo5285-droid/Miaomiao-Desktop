@@ -10,6 +10,11 @@ public partial class MiaomiaoAccountView : ReactiveUserControl<MiaomiaoAccountVi
 
     public void SelectSection(int index)
     {
-        tabAccountSections.SelectedIndex = Math.Clamp(index, 0, 1);
+        tabAccountSections.SelectedIndex = Math.Clamp(index, 0, 3);
+    }
+
+    private void SelectPlans_Click(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        SelectSection(1);
     }
 }

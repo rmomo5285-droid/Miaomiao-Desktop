@@ -452,14 +452,24 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         SetActivePage(pageHome, navHome);
     }
 
+    private void NavRoutes_Click(object? sender, RoutedEventArgs e)
+    {
+        SetActivePage(pageConnection, navRoutes);
+    }
+
+    private void NavAccount_Click(object? sender, RoutedEventArgs e)
+    {
+        ShowAccountSection(0, "账户", navAccount);
+    }
+
     private void NavPlans_Click(object? sender, RoutedEventArgs e)
     {
-        ShowAccountSection(0, "套餐", navPlans);
+        ShowAccountSection(1, "套餐", navPlans);
     }
 
     private void NavOrders_Click(object? sender, RoutedEventArgs e)
     {
-        ShowAccountSection(1, "订单", navOrders);
+        ShowAccountSection(2, "订单", navOrders);
     }
 
     private void NavTools_Click(object? sender, RoutedEventArgs e)
@@ -469,12 +479,17 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
 
     private void OpenPlans_Click(object? sender, RoutedEventArgs e)
     {
-        ShowAccountSection(0, "套餐", navPlans);
+        ShowAccountSection(1, "套餐", navPlans);
+    }
+
+    private void OpenAccount_Click(object? sender, RoutedEventArgs e)
+    {
+        ShowAccountSection(0, "账户", navAccount);
     }
 
     private void OpenAllRoutes_Click(object? sender, RoutedEventArgs e)
     {
-        SetActivePage(pageConnection, navHome);
+        SetActivePage(pageConnection, navRoutes);
     }
 
     private void ConnectionToggle_Click(object? sender, RoutedEventArgs e)
@@ -503,6 +518,8 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         pageTools.IsVisible = ReferenceEquals(activePage, pageTools);
 
         navHome.Classes.Set("Active", ReferenceEquals(activeButton, navHome));
+        navRoutes.Classes.Set("Active", ReferenceEquals(activeButton, navRoutes));
+        navAccount.Classes.Set("Active", ReferenceEquals(activeButton, navAccount));
         navPlans.Classes.Set("Active", ReferenceEquals(activeButton, navPlans));
         navOrders.Classes.Set("Active", ReferenceEquals(activeButton, navOrders));
         navTools.Classes.Set("Active", ReferenceEquals(activeButton, navTools));
