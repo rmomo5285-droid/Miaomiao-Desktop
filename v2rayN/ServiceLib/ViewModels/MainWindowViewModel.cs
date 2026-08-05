@@ -586,7 +586,18 @@ public partial class MainWindowViewModel : MyReactiveObject
 
     public async Task UpdateSubscriptionProcess(string subId, bool blProxy)
     {
-        await Task.Run(async () => await SubscriptionHandler.UpdateProcess(_config, subId, blProxy, UpdateTaskHandler));
+        try
+        {
+            // SubscriptionHandler is already asynchronous. Keeping this call on the
+            // captured UI context ensures its completion callback can safely refresh
+            // Avalonia-bound collections.
+            await SubscriptionHandler.UpdateProcess(_config, subId, blProxy, UpdateTaskHandler);
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("Update subscription", ex);
+            NoticeManager.Instance.Enqueue("订阅更新失败，已继续使用本地缓存节点。");
+        }
     }
 
     #endregion Subscription

@@ -256,6 +256,37 @@ public sealed record MiaomiaoOrder
     public MiaomiaoPlanSummary? Plan { get; init; }
 }
 
+public static class MiaomiaoDisplayPolicy
+{
+    public static string FormatOrderPeriod(string? period) => period switch
+    {
+        "month_price" => "月付",
+        "quarter_price" => "季付",
+        "half_year_price" => "半年付",
+        "year_price" => "年付",
+        "two_year_price" => "两年付",
+        "three_year_price" => "三年付",
+        "onetime_price" => "一次性",
+        "reset_price" => "流量重置",
+        null or "" => "-",
+        _ => period
+    };
+
+    public static string FormatOrderAmount(decimal? amountInCents)
+    {
+        return amountInCents is { } amount ? $"¥{amount / 100m:0.00}" : "-";
+    }
+
+    public static string FormatOrderStatus(int? statusCode) => statusCode switch
+    {
+        0 => "待支付",
+        1 => "处理中",
+        2 => "已取消",
+        3 or 4 => "已完成",
+        _ => "未知"
+    };
+}
+
 internal static class MiaomiaoOrderPolicy
 {
     internal static MiaomiaoPaymentState GetPaymentState(int? statusCode) => statusCode switch

@@ -1,59 +1,59 @@
 <ResourceDictionary xmlns="https://github.com/avaloniaui" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <ResourceDictionary.ThemeDictionaries>
         <ResourceDictionary x:Key="Light">
-            <SolidColorBrush x:Key="MiaomiaoWindowBackgroundBrush" Color="#F4F6F7" />
+            <SolidColorBrush x:Key="MiaomiaoWindowBackgroundBrush" Color="#F5F6F8" />
             <SolidColorBrush x:Key="MiaomiaoSurfaceBrush" Color="#FFFFFF" />
-            <SolidColorBrush x:Key="MiaomiaoSurfaceAltBrush" Color="#EEF2F2" />
-            <SolidColorBrush x:Key="MiaomiaoBorderBrush" Color="#DCE3E2" />
-            <SolidColorBrush x:Key="MiaomiaoForegroundBrush" Color="#17201E" />
-            <SolidColorBrush x:Key="MiaomiaoMutedForegroundBrush" Color="#66736F" />
-            <SolidColorBrush x:Key="MiaomiaoSidebarBrush" Color="#151918" />
-            <SolidColorBrush x:Key="MiaomiaoSidebarSurfaceBrush" Color="#202624" />
-            <SolidColorBrush x:Key="MiaomiaoSidebarForegroundBrush" Color="#F1F7F5" />
-            <SolidColorBrush x:Key="MiaomiaoNavForegroundBrush" Color="#9EAAA6" />
-            <SolidColorBrush x:Key="MiaomiaoPrimaryBrush" Color="#0D9B78" />
-            <SolidColorBrush x:Key="MiaomiaoPrimaryHoverBrush" Color="#087D62" />
-            <SolidColorBrush x:Key="MiaomiaoPrimarySoftBrush" Color="#DCF3EC" />
-            <SolidColorBrush x:Key="MiaomiaoPrimarySoftForegroundBrush" Color="#08634F" />
-            <SolidColorBrush x:Key="MiaomiaoWarningBrush" Color="#F2675A" />
-            <SolidColorBrush x:Key="MiaomiaoWarningSoftBrush" Color="#FDE7E3" />
+            <SolidColorBrush x:Key="MiaomiaoSurfaceAltBrush" Color="#F0F2F4" />
+            <SolidColorBrush x:Key="MiaomiaoBorderBrush" Color="#E2E5E8" />
+            <SolidColorBrush x:Key="MiaomiaoForegroundBrush" Color="#161819" />
+            <SolidColorBrush x:Key="MiaomiaoMutedForegroundBrush" Color="#676D72" />
+            <SolidColorBrush x:Key="MiaomiaoSidebarBrush" Color="#17191B" />
+            <SolidColorBrush x:Key="MiaomiaoSidebarSurfaceBrush" Color="#2A2D30" />
+            <SolidColorBrush x:Key="MiaomiaoSidebarForegroundBrush" Color="#F5F6F7" />
+            <SolidColorBrush x:Key="MiaomiaoNavForegroundBrush" Color="#A8ADB1" />
+            <SolidColorBrush x:Key="MiaomiaoPrimaryBrush" Color="#F45B45" />
+            <SolidColorBrush x:Key="MiaomiaoPrimaryHoverBrush" Color="#D94431" />
+            <SolidColorBrush x:Key="MiaomiaoPrimarySoftBrush" Color="#FFF0EC" />
+            <SolidColorBrush x:Key="MiaomiaoPrimarySoftForegroundBrush" Color="#D94431" />
+            <SolidColorBrush x:Key="MiaomiaoWarningBrush" Color="#D94343" />
+            <SolidColorBrush x:Key="MiaomiaoWarningSoftBrush" Color="#FDEAEA" />
         </ResourceDictionary>
         <ResourceDictionary x:Key="Dark">
-            <SolidColorBrush x:Key="MiaomiaoWindowBackgroundBrush" Color="#101312" />
-            <SolidColorBrush x:Key="MiaomiaoSurfaceBrush" Color="#191D1C" />
-            <SolidColorBrush x:Key="MiaomiaoSurfaceAltBrush" Color="#222826" />
-            <SolidColorBrush x:Key="MiaomiaoBorderBrush" Color="#303936" />
-            <SolidColorBrush x:Key="MiaomiaoForegroundBrush" Color="#EDF4F1" />
-            <SolidColorBrush x:Key="MiaomiaoMutedForegroundBrush" Color="#95A39E" />
-            <SolidColorBrush x:Key="MiaomiaoSidebarBrush" Color="#0B0E0D" />
-            <SolidColorBrush x:Key="MiaomiaoSidebarSurfaceBrush" Color="#181D1B" />
-            <SolidColorBrush x:Key="MiaomiaoSidebarForegroundBrush" Color="#F3F8F6" />
-            <SolidColorBrush x:Key="MiaomiaoNavForegroundBrush" Color="#93A09B" />
-            <SolidColorBrush x:Key="MiaomiaoPrimaryBrush" Color="#28C99A" />
-            <SolidColorBrush x:Key="MiaomiaoPrimaryHoverBrush" Color="#53D8B0" />
-            <SolidColorBrush x:Key="MiaomiaoPrimarySoftBrush" Color="#173C31" />
-            <SolidColorBrush x:Key="MiaomiaoPrimarySoftForegroundBrush" Color="#75E3C2" />
-            <SolidColorBrush x:Key="MiaomiaoWarningBrush" Color="#FF7A6E" />
-            <SolidColorBrush x:Key="MiaomiaoWarningSoftBrush" Color="#442622" />
+            <SolidColorBrush x:Key="MiaomiaoWindowBackgroundBrush" Color="#111315" />
+            <SolidColorBrush x:Key="MiaomiaoSurfaceBrush" Color="#1D2023" />
+            <SolidColorBrush x:Key="MiaomiaoSurfaceAltBrush" Color="#25292D" />
+            <SolidColorBrush x:Key="MiaomiaoBorderBrush" Color="#32373C" />
+            <SolidColorBrush x:Key="MiaomiaoForegroundBrush" Color="#F5F6F7" />
+            <SolidColorBrush x:Key="MiaomiaoMutedForegroundBrush" Color="#A9AFB4" />
+            <SolidColorBrush x:Key="MiaomiaoSidebarBrush" Color="#0D0F11" />
+            <SolidColorBrush x:Key="MiaomiaoSidebarSurfaceBrush" Color="#24282C" />
+            <SolidColorBrush x:Key="MiaomiaoSidebarForegroundBrush" Color="#F5F6F7" />
+            <SolidColorBrush x:Key="MiaomiaoNavForegroundBrush" Color="#9FA5AA" />
+            <SolidColorBrush x:Key="MiaomiaoPrimaryBrush" Color="#FF735F" />
+            <SolidColorBrush x:Key="MiaomiaoPrimaryHoverBrush" Color="#FF8A78" />
+            <SolidColorBrush x:Key="MiaomiaoPrimarySoftBrush" Color="#3B2521" />
+            <SolidColorBrush x:Key="MiaomiaoPrimarySoftForegroundBrush" Color="#FF9A8B" />
+            <SolidColorBrush x:Key="MiaomiaoWarningBrush" Color="#FF7777" />
+            <SolidColorBrush x:Key="MiaomiaoWarningSoftBrush" Color="#442527" />
         </ResourceDictionary>
     </ResourceDictionary.ThemeDictionaries>
 
-    <SolidColorBrush x:Key="MiaomiaoWindowBackgroundBrush" Color="#F4F6F7" />
+    <SolidColorBrush x:Key="MiaomiaoWindowBackgroundBrush" Color="#F5F6F8" />
     <SolidColorBrush x:Key="MiaomiaoSurfaceBrush" Color="#FFFFFF" />
-    <SolidColorBrush x:Key="MiaomiaoSurfaceAltBrush" Color="#EEF2F2" />
-    <SolidColorBrush x:Key="MiaomiaoBorderBrush" Color="#DCE3E2" />
-    <SolidColorBrush x:Key="MiaomiaoForegroundBrush" Color="#17201E" />
-    <SolidColorBrush x:Key="MiaomiaoMutedForegroundBrush" Color="#66736F" />
-    <SolidColorBrush x:Key="MiaomiaoSidebarBrush" Color="#151918" />
-    <SolidColorBrush x:Key="MiaomiaoSidebarSurfaceBrush" Color="#202624" />
-    <SolidColorBrush x:Key="MiaomiaoSidebarForegroundBrush" Color="#F1F7F5" />
-    <SolidColorBrush x:Key="MiaomiaoNavForegroundBrush" Color="#9EAAA6" />
-    <SolidColorBrush x:Key="MiaomiaoPrimaryBrush" Color="#0D9B78" />
-    <SolidColorBrush x:Key="MiaomiaoPrimaryHoverBrush" Color="#087D62" />
-    <SolidColorBrush x:Key="MiaomiaoPrimarySoftBrush" Color="#DCF3EC" />
-    <SolidColorBrush x:Key="MiaomiaoPrimarySoftForegroundBrush" Color="#08634F" />
-    <SolidColorBrush x:Key="MiaomiaoWarningBrush" Color="#F2675A" />
-    <SolidColorBrush x:Key="MiaomiaoWarningSoftBrush" Color="#FDE7E3" />
+    <SolidColorBrush x:Key="MiaomiaoSurfaceAltBrush" Color="#F0F2F4" />
+    <SolidColorBrush x:Key="MiaomiaoBorderBrush" Color="#E2E5E8" />
+    <SolidColorBrush x:Key="MiaomiaoForegroundBrush" Color="#161819" />
+    <SolidColorBrush x:Key="MiaomiaoMutedForegroundBrush" Color="#676D72" />
+    <SolidColorBrush x:Key="MiaomiaoSidebarBrush" Color="#17191B" />
+    <SolidColorBrush x:Key="MiaomiaoSidebarSurfaceBrush" Color="#2A2D30" />
+    <SolidColorBrush x:Key="MiaomiaoSidebarForegroundBrush" Color="#F5F6F7" />
+    <SolidColorBrush x:Key="MiaomiaoNavForegroundBrush" Color="#A8ADB1" />
+    <SolidColorBrush x:Key="MiaomiaoPrimaryBrush" Color="#F45B45" />
+    <SolidColorBrush x:Key="MiaomiaoPrimaryHoverBrush" Color="#D94431" />
+    <SolidColorBrush x:Key="MiaomiaoPrimarySoftBrush" Color="#FFF0EC" />
+    <SolidColorBrush x:Key="MiaomiaoPrimarySoftForegroundBrush" Color="#D94431" />
+    <SolidColorBrush x:Key="MiaomiaoWarningBrush" Color="#D94343" />
+    <SolidColorBrush x:Key="MiaomiaoWarningSoftBrush" Color="#FDEAEA" />
     <SolidColorBrush x:Key="MiaomiaoOnPrimaryBrush" Color="#FFFFFF" />
     <SolidColorBrush x:Key="MiaomiaoOnWarningBrush" Color="#FFFFFF" />
 

@@ -6,6 +6,7 @@
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
     xmlns:models="clr-namespace:ServiceLib.Models.Dto;assembly=ServiceLib"
+    xmlns:views="clr-namespace:v2rayN.Desktop.Views"
     xmlns:vms="clr-namespace:ServiceLib.ViewModels;assembly=ServiceLib"
     x:DataType="vms:MiaomiaoAccountViewModel"
     mc:Ignorable="d">
@@ -13,7 +14,10 @@
         <conv:MiaomiaoPlanPriceConverter x:Key="PlanPriceConverter" />
         <conv:MiaomiaoDateConverter x:Key="DateConverter" />
         <conv:MiaomiaoBytesConverter x:Key="BytesConverter" />
-        <conv:MiaomiaoNoticeTextConverter x:Key="NoticeTextConverter" />
+        <conv:MiaomiaoOrderPeriodConverter x:Key="OrderPeriodConverter" />
+        <conv:MiaomiaoOrderAmountConverter x:Key="OrderAmountConverter" />
+        <conv:MiaomiaoOrderStatusConverter x:Key="OrderStatusConverter" />
+        <conv:MiaomiaoSpeedLimitConverter x:Key="SpeedLimitConverter" />
     </UserControl.Resources>
 
     <Grid>
@@ -107,7 +111,7 @@
                 </Grid>
             </Border>
 
-            <TabControl Grid.Row="1">
+            <TabControl x:Name="tabAccountSections" Grid.Row="1">
                 <TabItem Header="套餐">
                     <Grid Margin="0,14,0,0" ColumnDefinitions="1.4*,0.9*" ColumnSpacing="16">
                         <ListBox
@@ -123,13 +127,15 @@
                             </ListBox.ItemsPanel>
                             <ListBox.ItemTemplate>
                                 <DataTemplate x:DataType="models:MiaomiaoPlan">
-                                    <Grid MinHeight="68" Margin="4" ColumnDefinitions="*,Auto" ColumnSpacing="16">
-                                        <StackPanel VerticalAlignment="Center" Spacing="4">
+                                    <Grid MinHeight="112" Margin="4" ColumnDefinitions="*,Auto" ColumnSpacing="18">
+                                        <StackPanel VerticalAlignment="Center" Spacing="7">
                                             <TextBlock FontSize="15" FontWeight="SemiBold" Text="{Binding Name}" />
                                             <StackPanel Orientation="Horizontal" Spacing="12">
                                                 <TextBlock Classes="MiaomiaoMuted" Text="{Binding TransferEnable, StringFormat={}{0:0.##} GB}" />
                                                 <TextBlock Classes="MiaomiaoMuted" Text="{Binding DeviceLimit, StringFormat={}设备 {0}}" />
+                                                <TextBlock Classes="MiaomiaoMuted" Text="{Binding SpeedLimit, Converter={StaticResource SpeedLimitConverter}}" />
                                             </StackPanel>
+                                            <views:MiaomiaoRichTextView Compact="True" Source="{Binding Content}" />
                                         </StackPanel>
                                         <StackPanel Grid.Column="1" VerticalAlignment="Center" HorizontalAlignment="Right" Spacing="2">
                                             <TextBlock
@@ -147,8 +153,17 @@
                         <ScrollViewer Grid.Column="1" VerticalScrollBarVisibility="Auto">
                             <Border Padding="18" Classes="MiaomiaoCard">
                                 <StackPanel Spacing="12">
-                                <TextBlock Classes="MiaomiaoSectionTitle" Text="结算" />
-                                <TextBlock Classes="MiaomiaoMuted" Text="{Binding SelectedPlan.Name, FallbackValue=请选择套餐, TargetNullValue=请选择套餐}" />
+                                <TextBlock Classes="MiaomiaoSectionTitle" Text="确认套餐" />
+                                <Border Padding="12" Classes="MiaomiaoSoftCard">
+                                    <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
+                                        <TextBlock FontWeight="SemiBold" Text="{Binding SelectedPlan.Name, FallbackValue=请选择套餐, TargetNullValue=请选择套餐}" />
+                                        <TextBlock
+                                            Grid.Column="1"
+                                            FontWeight="SemiBold"
+                                            Foreground="{DynamicResource MiaomiaoPrimaryBrush}"
+                                            Text="{Binding SelectedPlan, Converter={StaticResource PlanPriceConverter}}" />
+                                    </Grid>
+                                </Border>
                                 <StackPanel Spacing="5">
                                     <TextBlock Classes="MiaomiaoMuted" Text="周期" />
                                     <ComboBox x:Name="cmbBillingPeriod" SelectionChanged="BillingPeriod_SelectionChanged" />
@@ -157,12 +172,13 @@
                                     <TextBlock Classes="MiaomiaoMuted" Text="优惠码" />
                                     <TextBox Classes="MiaomiaoInput" Text="{Binding CouponCode, Mode=TwoWay}" />
                                 </StackPanel>
-                                <Button Classes="MiaomiaoPrimary" Command="{Binding PurchaseCmd}" Content="创建订单" />
+                                <Button HorizontalContentAlignment="Center" Classes="MiaomiaoPrimary" Command="{Binding PurchaseCmd}" Content="创建订单" />
+                                <TextBlock Classes="MiaomiaoMuted" FontSize="11" Text="创建订单后再选择支付方式" />
                                 <ComboBox
                                     DisplayMemberBinding="{Binding Name}"
                                     ItemsSource="{Binding PaymentMethods}"
                                     SelectedItem="{Binding SelectedPaymentMethod, Mode=TwoWay}" />
-                                <Button Classes="MiaomiaoPrimary" Command="{Binding PayCmd}" Content="前往支付" />
+                                <Button HorizontalContentAlignment="Center" Classes="MiaomiaoPrimary" Command="{Binding PayCmd}" Content="前往支付" />
                                 <StackPanel Orientation="Horizontal" Spacing="8">
                                     <Button Classes="MiaomiaoSecondary" Command="{Binding OpenPaymentCmd}" Content="打开支付页" />
                                     <Button Classes="MiaomiaoSecondary" Command="{Binding CheckPaymentCmd}" Content="查询状态" />
@@ -176,28 +192,6 @@
                     </Grid>
                 </TabItem>
 
-                <TabItem Header="公告">
-                    <ListBox Margin="0,14,0,0" ItemsSource="{Binding Notices}">
-                        <ListBox.ItemTemplate>
-                            <DataTemplate x:DataType="models:MiaomiaoNotice">
-                                <Border Margin="0,0,0,8" Padding="16" Classes="MiaomiaoCard">
-                                    <StackPanel Spacing="7">
-                                        <TextBlock FontSize="15" FontWeight="SemiBold" Text="{Binding Title}" />
-                                        <SelectableTextBlock
-                                            Classes="MiaomiaoMuted"
-                                            Text="{Binding Content, Converter={StaticResource NoticeTextConverter}}"
-                                            TextWrapping="Wrap" />
-                                        <TextBlock
-                                            Classes="MiaomiaoMuted"
-                                            FontSize="11"
-                                            Text="{Binding CreatedAt, Converter={StaticResource DateConverter}}" />
-                                    </StackPanel>
-                                </Border>
-                            </DataTemplate>
-                        </ListBox.ItemTemplate>
-                    </ListBox>
-                </TabItem>
-
                 <TabItem Header="订单">
                     <DataGrid
                         Margin="0,14,0,0"
@@ -208,9 +202,10 @@
                         <DataGrid.Columns>
                             <DataGridTextColumn Width="2*" Binding="{Binding TradeNo}" Header="订单号" />
                             <DataGridTextColumn Width="*" Binding="{Binding Plan.Name}" Header="套餐" />
-                            <DataGridTextColumn Width="*" Binding="{Binding Period}" Header="周期" />
-                            <DataGridTextColumn Width="*" Binding="{Binding TotalAmount}" Header="金额" />
-                            <DataGridTextColumn Width="*" Binding="{Binding Status}" Header="状态" />
+                            <DataGridTextColumn Width="*" Binding="{Binding Period, Converter={StaticResource OrderPeriodConverter}}" Header="周期" />
+                            <DataGridTextColumn Width="*" Binding="{Binding TotalAmount, Converter={StaticResource OrderAmountConverter}}" Header="金额" />
+                            <DataGridTextColumn Width="*" Binding="{Binding Status, Converter={StaticResource OrderStatusConverter}}" Header="状态" />
+                            <DataGridTextColumn Width="1.2*" Binding="{Binding CreatedAt, Converter={StaticResource DateConverter}}" Header="创建时间" />
                         </DataGrid.Columns>
                     </DataGrid>
                 </TabItem>

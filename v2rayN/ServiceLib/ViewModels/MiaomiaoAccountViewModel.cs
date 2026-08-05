@@ -9,6 +9,8 @@ public partial class MiaomiaoAccountViewModel : MyReactiveObject
     private CancellationTokenSource? _paymentPollingCts;
     private string? _paymentPollingTradeNo;
 
+    public EventChannel<IReadOnlyList<MiaomiaoNotice>> NoticesUpdated { get; } = new();
+
     public BulkObservableCollection<MiaomiaoPlan> Plans { get; } = [];
     public BulkObservableCollection<MiaomiaoNotice> Notices { get; } = [];
     public BulkObservableCollection<MiaomiaoOrder> Orders { get; } = [];
@@ -331,6 +333,7 @@ public partial class MiaomiaoAccountViewModel : MyReactiveObject
         CurrentSubscription = await subscriptionTask;
         ReplaceItems(Plans, (await plansTask).Where(plan => plan.Show));
         ReplaceItems(Notices, (await noticesTask).Where(notice => notice.Show));
+        NoticesUpdated.Publish(Notices.ToList());
         var orders = await ordersTask;
         ReplaceItems(Orders, orders);
         ReplaceItems(PaymentMethods, (await paymentMethodsTask).Where(method => method.Show && method.IsAvailable));
