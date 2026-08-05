@@ -128,6 +128,40 @@ public sealed class MiaomiaoProxyStateTextConverter : IValueConverter
         => throw new NotSupportedException();
 }
 
+public sealed class MiaomiaoDelayDisplayConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var text = value?.ToString()?.Trim();
+        if (string.IsNullOrEmpty(text))
+        {
+            return "未测试";
+        }
+
+        if (int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var delay))
+        {
+            return delay > 0 ? $"{delay} ms" : "超时";
+        }
+
+        return text;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public sealed class MiaomiaoSpeedDisplayConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        var text = value?.ToString()?.Trim();
+        return string.IsNullOrEmpty(text) ? "未测速" : text;
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 public sealed class MiaomiaoSpeedLimitConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)

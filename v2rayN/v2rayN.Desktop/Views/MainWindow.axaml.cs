@@ -18,6 +18,7 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
     private readonly HashSet<long> _shownMiaomiaoDesktopUpdateBuilds = [];
     private readonly HashSet<string> _shownMiaomiaoNotices = [];
     private BackupAndRestoreView? _backupAndRestoreView;
+    private bool _isApplyingRouteSelection;
     private bool _blCloseByUser = false;
     private bool _isWindowOpened;
 
@@ -490,6 +491,34 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
     private void OpenAllRoutes_Click(object? sender, RoutedEventArgs e)
     {
         SetActivePage(pageConnection, navRoutes);
+    }
+
+    private async void MiaomiaoRoutes_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_isApplyingRouteSelection
+            || sender is not ListBox { SelectedItem: ServiceLib.Models.Dto.ProfileItemModel selected }
+            || selected.IndexId.IsNullOrEmpty()
+            || ViewModel is null)
+        {
+            return;
+        }
+
+        ViewModel.ProfilesViewModel.SelectedProfile = selected;
+        ViewModel.ProfilesViewModel.SelectedProfiles = [selected];
+        if (_config.IndexId == selected.IndexId)
+        {
+            return;
+        }
+
+        try
+        {
+            _isApplyingRouteSelection = true;
+            await ViewModel.ProfilesViewModel.SetDefaultServer(selected.IndexId);
+        }
+        finally
+        {
+            _isApplyingRouteSelection = false;
+        }
     }
 
     private void ConnectionToggle_Click(object? sender, RoutedEventArgs e)

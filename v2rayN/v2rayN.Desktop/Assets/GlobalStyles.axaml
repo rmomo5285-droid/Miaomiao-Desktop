@@ -76,6 +76,66 @@
         <Setter Property="CornerRadius" Value="6" />
     </Style>
 
+    <Style Selector="Border.MiaomiaoBottomBar">
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoSidebarBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource MiaomiaoSidebarSurfaceBrush}" />
+        <Setter Property="BorderThickness" Value="0,1,0,0" />
+    </Style>
+
+    <Style Selector="TextBlock.MiaomiaoBottomBrand">
+        <Setter Property="FontSize" Value="18" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoSidebarForegroundBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.MiaomiaoBottomCaption">
+        <Setter Property="FontSize" Value="10" />
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoNavForegroundBrush}" />
+    </Style>
+
+    <Style Selector="Border.MiaomiaoBottomUtility">
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoSidebarSurfaceBrush}" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+
+    <Style Selector="Button.MiaomiaoBottomNav">
+        <Setter Property="MinWidth" Value="82" />
+        <Setter Property="Height" Value="58" />
+        <Setter Property="Margin" Value="3,0" />
+        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="HorizontalContentAlignment" Value="Center" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoNavForegroundBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="8" />
+        <Setter Property="FontSize" Value="11" />
+    </Style>
+
+    <Style Selector="Button.MiaomiaoBottomNav PathIcon">
+        <Setter Property="Width" Value="18" />
+        <Setter Property="Height" Value="18" />
+        <Setter Property="HorizontalAlignment" Value="Center" />
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoNavForegroundBrush}" />
+    </Style>
+
+    <Style Selector="Button.MiaomiaoBottomNav:pointerover">
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoSidebarSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoSidebarForegroundBrush}" />
+    </Style>
+
+    <Style Selector="Button.MiaomiaoBottomNav:pointerover PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoSidebarForegroundBrush}" />
+    </Style>
+
+    <Style Selector="Button.MiaomiaoBottomNav.Active">
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoPrimaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoOnPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.MiaomiaoBottomNav.Active PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoOnPrimaryBrush}" />
+    </Style>
+
     <Style Selector="TextBlock.MiaomiaoBrand">
         <Setter Property="FontSize" Value="21" />
         <Setter Property="FontWeight" Value="SemiBold" />
@@ -249,6 +309,52 @@
     <Style Selector="Button.MiaomiaoIconText:pointerover">
         <Setter Property="Background" Value="{DynamicResource MiaomiaoPrimarySoftBrush}" />
         <Setter Property="Foreground" Value="{DynamicResource MiaomiaoPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="Border.MiaomiaoActionDock">
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoSurfaceAltBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource MiaomiaoBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+
+    <Style Selector="Button.MiaomiaoDiagnostic">
+        <Setter Property="MinHeight" Value="38" />
+        <Setter Property="Padding" Value="13,8" />
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoForegroundBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="6" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <Style Selector="Button.MiaomiaoDiagnostic PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.MiaomiaoDiagnostic:pointerover">
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.MiaomiaoDiagnostic.Accent">
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoPrimaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoOnPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.MiaomiaoDiagnostic.Accent PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoOnPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="Button.MiaomiaoDiagnostic.Accent:pointerover">
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoPrimaryHoverBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoOnPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="TextBlock.MiaomiaoRouteMetric">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoSuccessBrush}" />
     </Style>
 
     <Style Selector="Button.MiaomiaoTextButton">
