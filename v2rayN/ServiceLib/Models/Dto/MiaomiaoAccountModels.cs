@@ -11,6 +11,42 @@ public sealed record MiaomiaoCreateOrderRequest(
     [property: JsonPropertyName("period")] string Period,
     [property: JsonPropertyName("coupon_code")] string? CouponCode = null);
 
+public sealed record MiaomiaoCouponCheckRequest(
+    [property: JsonPropertyName("code")] string Code,
+    [property: JsonPropertyName("plan_id")] int PlanId);
+
+public sealed record MiaomiaoCoupon
+{
+    [JsonPropertyName("id")]
+    [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+    public int? Id { get; init; }
+
+    [JsonPropertyName("name")]
+    public string? Name { get; init; }
+
+    [JsonPropertyName("code")]
+    public string? Code { get; init; }
+
+    [JsonPropertyName("type")]
+    [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+    public int Type { get; init; }
+
+    [JsonPropertyName("value")]
+    [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
+    public decimal Value { get; init; }
+}
+
+public sealed record MiaomiaoBillingPeriod(string Key, string Label, decimal Price)
+{
+    public string PriceDisplay => MiaomiaoDisplayPolicy.FormatOrderAmount(Price);
+}
+
+public sealed record MiaomiaoPriceSummary(
+    decimal OriginalAmount,
+    decimal DiscountAmount,
+    decimal BalanceAmount,
+    decimal PayableAmount);
+
 public sealed record MiaomiaoCheckoutRequest(
     [property: JsonPropertyName("trade_no")] string TradeNo,
     [property: JsonPropertyName("method")] string Method);
@@ -285,6 +321,35 @@ public static class MiaomiaoDisplayPolicy
         3 or 4 => "已完成",
         _ => "未知"
     };
+
+    public static string FormatCoupon(MiaomiaoCoupon coupon) => coupon.Type switch
+    {
+        1 => $"立减 {FormatOrderAmount(coupon.Value)}",
+        2 => $"优惠 {coupon.Value:0.##}%",
+        _ => "优惠码已应用"
+    };
+}
+
+internal static class MiaomiaoPricingPolicy
+{
+    internal static MiaomiaoPriceSummary Calculate(
+        decimal originalAmount,
+        MiaomiaoCoupon? coupon,
+        decimal availableBalance)
+    {
+        originalAmount = Math.Max(0, originalAmount);
+        availableBalance = Math.Max(0, availableBalance);
+        var discount = coupon?.Type switch
+        {
+            1 => coupon.Value,
+            2 => originalAmount * coupon.Value / 100m,
+            _ => 0m
+        };
+        discount = Math.Clamp(discount, 0m, originalAmount);
+        var afterDiscount = originalAmount - discount;
+        var balance = Math.Min(availableBalance, afterDiscount);
+        return new(originalAmount, discount, balance, afterDiscount - balance);
+    }
 }
 
 internal static class MiaomiaoOrderPolicy

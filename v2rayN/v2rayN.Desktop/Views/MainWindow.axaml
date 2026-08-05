@@ -138,31 +138,33 @@
                     </Border>
 
                     <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                        <Grid Margin="22" ColumnDefinitions="1.15*,0.85*" RowDefinitions="Auto,Auto" ColumnSpacing="18" RowSpacing="18">
-                            <Border Grid.Row="0" Grid.Column="0" Padding="28" Classes="MiaomiaoCard">
-                                <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="18">
-                                    <StackPanel HorizontalAlignment="Center" Spacing="6">
-                                        <TextBlock HorizontalAlignment="Center" Classes="MiaomiaoMuted" Text="当前线路" />
-                                        <TextBlock
-                                            MaxWidth="500"
-                                            HorizontalAlignment="Center"
-                                            FontSize="16"
-                                            FontWeight="SemiBold"
-                                            Text="{Binding StatusBarViewModel.RunningServerDisplay, FallbackValue=请选择线路, TargetNullValue=请选择线路}"
-                                            TextAlignment="Center"
-                                            TextTrimming="CharacterEllipsis" />
+                        <Grid Margin="22" ColumnDefinitions="1.2*,0.8*" RowDefinitions="Auto,Auto" ColumnSpacing="18" RowSpacing="18">
+                            <Border Grid.Row="0" Grid.Column="0" Padding="26" Classes="MiaomiaoCard">
+                                <Grid ColumnDefinitions="*,Auto" RowDefinitions="Auto,*,Auto" ColumnSpacing="24" RowSpacing="18">
+                                    <StackPanel Grid.Column="0" Spacing="8">
+                                        <Border HorizontalAlignment="Left" Padding="9,5" Background="{DynamicResource MiaomiaoSuccessSoftBrush}" CornerRadius="8">
+                                            <StackPanel Orientation="Horizontal" Spacing="7">
+                                                <Border Width="7" Height="7" VerticalAlignment="Center" Background="{DynamicResource MiaomiaoSuccessBrush}" CornerRadius="4" />
+                                                <TextBlock FontSize="11" Foreground="{DynamicResource MiaomiaoSuccessBrush}" Text="连接保护" />
+                                            </StackPanel>
+                                        </Border>
+                                        <TextBlock FontSize="24" FontWeight="SemiBold" Text="轻松连接，安心使用" />
+                                        <TextBlock Classes="MiaomiaoMuted" Text="点击右侧按钮开启或关闭系统代理" />
                                     </StackPanel>
+
                                     <Button
                                         x:Name="btnConnectionToggle"
-                                        Grid.Row="1"
-                                        Width="174"
-                                        Height="174"
+                                        Grid.RowSpan="3"
+                                        Grid.Column="1"
+                                        Width="150"
+                                        Height="150"
                                         HorizontalAlignment="Center"
                                         HorizontalContentAlignment="Center"
+                                        VerticalAlignment="Center"
                                         VerticalContentAlignment="Center"
                                         Classes="MiaomiaoConnect"
                                         Click="ConnectionToggle_Click">
-                                        <StackPanel HorizontalAlignment="Center" Spacing="10">
+                                        <StackPanel HorizontalAlignment="Center" Spacing="9">
                                             <PathIcon
                                                 Width="34"
                                                 Height="34"
@@ -176,13 +178,26 @@
                                                 TextAlignment="Center" />
                                         </StackPanel>
                                     </Button>
-                                    <Grid Grid.Row="2" ColumnDefinitions="*,Auto" ColumnSpacing="16">
+
+                                    <Border Grid.Row="1" Grid.Column="0" Padding="14" Classes="MiaomiaoAccentCard">
+                                        <StackPanel Spacing="5">
+                                            <TextBlock Classes="MiaomiaoMuted" FontSize="11" Text="当前线路" />
+                                            <TextBlock
+                                                MaxWidth="520"
+                                                FontSize="16"
+                                                FontWeight="SemiBold"
+                                                Text="{Binding StatusBarViewModel.RunningServerDisplay, FallbackValue=请选择线路, TargetNullValue=请选择线路}"
+                                                TextTrimming="CharacterEllipsis" />
+                                        </StackPanel>
+                                    </Border>
+
+                                    <Grid Grid.Row="2" Grid.Column="0" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="12">
                                         <StackPanel Orientation="Horizontal" Spacing="8">
-                                            <TextBlock VerticalAlignment="Center" Classes="MiaomiaoMuted" Text="TUN 模式" />
+                                            <TextBlock VerticalAlignment="Center" FontWeight="SemiBold" Text="TUN 模式" />
                                             <ToggleSwitch IsChecked="{Binding StatusBarViewModel.EnableTun, Mode=TwoWay}" />
                                         </StackPanel>
                                         <TextBlock
-                                            Grid.Column="1"
+                                            Grid.Column="2"
                                             VerticalAlignment="Center"
                                             Classes="MiaomiaoMuted"
                                             FontSize="12"
@@ -199,24 +214,35 @@
                                 Classes="MiaomiaoCard"
                                 x:DataType="vms:MiaomiaoAccountViewModel">
                                 <Grid>
-                                    <StackPanel IsVisible="{Binding !IsLoggedIn}" VerticalAlignment="Center" Spacing="12">
-                                        <TextBlock Classes="MiaomiaoSectionTitle" Text="账户" />
-                                        <TextBlock Classes="MiaomiaoMuted" Text="登录后查看剩余流量、到期时间和套餐。" TextWrapping="Wrap" />
-                                        <Button HorizontalAlignment="Left" Classes="MiaomiaoPrimary" Click="OpenPlans_Click" Content="登录账户" />
+                                    <StackPanel IsVisible="{Binding !IsLoggedIn}" VerticalAlignment="Center" Spacing="14">
+                                        <Border Width="42" Height="42" HorizontalAlignment="Left" Background="{DynamicResource MiaomiaoPrimarySoftBrush}" CornerRadius="8">
+                                            <PathIcon
+                                                Width="20"
+                                                Height="20"
+                                                HorizontalAlignment="Center"
+                                                VerticalAlignment="Center"
+                                                Data="M12,12C14.21,12 16,10.21 16,8C16,5.79 14.21,4 12,4C9.79,4 8,5.79 8,8C8,10.21 9.79,12 12,12M12,14C7.58,14 4,15.79 4,18V20H20V18C20,15.79 16.42,14 12,14Z"
+                                                Foreground="{DynamicResource MiaomiaoPrimaryBrush}" />
+                                        </Border>
+                                        <StackPanel Spacing="4">
+                                            <TextBlock Classes="MiaomiaoSectionTitle" Text="登录账户" />
+                                            <TextBlock Classes="MiaomiaoMuted" Text="查看流量、到期时间并购买套餐" TextWrapping="Wrap" />
+                                        </StackPanel>
+                                        <Button HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Classes="MiaomiaoPrimary" Click="OpenPlans_Click" Content="登录或注册" />
                                     </StackPanel>
-                                    <StackPanel IsVisible="{Binding IsLoggedIn}" Spacing="16">
+                                    <StackPanel IsVisible="{Binding IsLoggedIn}" Spacing="15">
                                         <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                                             <StackPanel Spacing="3">
-                                                <TextBlock Classes="MiaomiaoSectionTitle" Text="{Binding CurrentSubscription.Plan.Name, FallbackValue=当前套餐, TargetNullValue=当前套餐}" />
                                                 <TextBlock Classes="MiaomiaoMuted" FontSize="12" Text="{Binding CurrentUser.Email}" TextTrimming="CharacterEllipsis" />
+                                                <TextBlock Classes="MiaomiaoSectionTitle" Text="{Binding CurrentSubscription.Plan.Name, FallbackValue=当前套餐, TargetNullValue=当前套餐}" />
                                             </StackPanel>
-                                            <Button Grid.Column="1" Classes="MiaomiaoSecondary" Click="OpenPlans_Click" Content="管理" />
+                                            <Button Grid.Column="1" Classes="MiaomiaoSecondary" Click="OpenPlans_Click" Content="管理套餐" />
                                         </Grid>
-                                        <Border Padding="14" Classes="MiaomiaoSoftCard">
-                                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="12" RowSpacing="12">
+                                        <Border Padding="15" Classes="MiaomiaoAccentCard">
+                                            <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="14" RowSpacing="14">
                                                 <StackPanel Spacing="3">
                                                     <TextBlock Classes="MiaomiaoMuted" FontSize="11" Text="剩余流量" />
-                                                    <TextBlock FontSize="18" FontWeight="SemiBold" Text="{Binding CurrentSubscription, Converter={StaticResource MiaomiaoRemainingBytesConverter}}" />
+                                                    <TextBlock FontSize="20" FontWeight="SemiBold" Foreground="{DynamicResource MiaomiaoPrimarySoftForegroundBrush}" Text="{Binding CurrentSubscription, Converter={StaticResource MiaomiaoRemainingBytesConverter}}" />
                                                 </StackPanel>
                                                 <StackPanel Grid.Column="1" Spacing="3">
                                                     <TextBlock Classes="MiaomiaoMuted" FontSize="11" Text="设备数" />
@@ -228,17 +254,20 @@
                                                 </StackPanel>
                                             </Grid>
                                         </Border>
-                                        <TextBlock Classes="MiaomiaoMuted" FontSize="12" Text="托管订阅每 48 小时自动更新" />
+                                        <StackPanel Orientation="Horizontal" Spacing="7">
+                                            <Border Width="7" Height="7" VerticalAlignment="Center" Background="{DynamicResource MiaomiaoSuccessBrush}" CornerRadius="4" />
+                                            <TextBlock Classes="MiaomiaoMuted" FontSize="12" Text="订阅每 48 小时自动更新" />
+                                        </StackPanel>
                                     </StackPanel>
                                 </Grid>
                             </Border>
 
                             <Border Grid.Row="1" Grid.ColumnSpan="2" Padding="20" Classes="MiaomiaoCard">
-                                <Grid RowDefinitions="Auto,*" RowSpacing="12">
+                                <Grid RowDefinitions="Auto,*" RowSpacing="14">
                                     <Grid ColumnDefinitions="*,Auto" ColumnSpacing="12">
                                         <StackPanel Spacing="2">
-                                            <TextBlock Classes="MiaomiaoSectionTitle" Text="切换线路" />
-                                            <TextBlock Classes="MiaomiaoMuted" FontSize="12" Text="选择线路后立即应用" />
+                                            <TextBlock Classes="MiaomiaoSectionTitle" Text="常用线路" />
+                                            <TextBlock Classes="MiaomiaoMuted" FontSize="12" Text="选择后立即切换，更多线路可在完整列表中管理" />
                                         </StackPanel>
                                         <Button Grid.Column="1" Classes="MiaomiaoSecondary" Click="OpenAllRoutes_Click" Content="全部线路" />
                                     </Grid>
@@ -251,7 +280,7 @@
                                         <ListBox.ItemTemplate>
                                             <DataTemplate x:DataType="models:ComboItem">
                                                 <Grid MinHeight="42" ColumnDefinitions="Auto,*" ColumnSpacing="12">
-                                                    <Border Width="8" Height="8" VerticalAlignment="Center" Background="{DynamicResource MiaomiaoPrimaryBrush}" CornerRadius="4" />
+                                                    <Border Width="8" Height="8" VerticalAlignment="Center" Background="{DynamicResource MiaomiaoSuccessBrush}" CornerRadius="4" />
                                                     <TextBlock Grid.Column="1" VerticalAlignment="Center" Text="{Binding Text}" TextTrimming="CharacterEllipsis" />
                                                 </Grid>
                                             </DataTemplate>
