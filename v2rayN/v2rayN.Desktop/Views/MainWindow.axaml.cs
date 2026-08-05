@@ -13,8 +13,10 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
     private readonly SingleReplaceableDisposable _layoutBindingsDisposable = new();
     private readonly WindowNotificationManager? _manager;
     private readonly SemaphoreSlim _miaomiaoPromptGate = new(1, 1);
+    private readonly SemaphoreSlim _miaomiaoNoticeGate = new(1, 1);
     private readonly HashSet<long> _shownMiaomiaoMigrationVersions = [];
     private readonly HashSet<long> _shownMiaomiaoDesktopUpdateBuilds = [];
+    private readonly HashSet<string> _shownMiaomiaoNotices = [];
     private BackupAndRestoreView? _backupAndRestoreView;
     private bool _blCloseByUser = false;
     private bool _isWindowOpened;
@@ -35,6 +37,8 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
 
         conTheme.Content ??= new ThemeSettingView();
         contentAccount.Content ??= new MiaomiaoAccountView();
+        var accountView = (MiaomiaoAccountView)contentAccount.Content;
+        homeAccountPanel.DataContext = accountView.ViewModel;
         txtVersion.Text = Utils.GetVersion();
 
         this.WhenActivated(disposables =>
@@ -82,6 +86,7 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
             this.BindCommand(ViewModel, vm => vm.OpenDownloadPageCmd, v => v.btnDownload).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.SubSettingCmd, v => v.btnSubscriptionSetting).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.SubUpdateCmd, v => v.btnQuickRefresh).DisposeWith(disposables);
+            this.BindCommand(ViewModel, vm => vm.SubUpdateCmd, v => v.btnHomeRefresh).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.RegionalPresetDefaultCmd, v => v.menuRegionalPresetsDefault).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.RegionalPresetRussiaCmd, v => v.menuRegionalPresetsRussia).DisposeWith(disposables);
             this.BindCommand(ViewModel, vm => vm.RegionalPresetIranCmd, v => v.menuRegionalPresetsIran).DisposeWith(disposables);
@@ -136,6 +141,12 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
               .Subscribe(_manifestResult => _ = ShowMiaomiaoPromptsAsync())
               .DisposeWith(disposables);
 
+            accountView.ViewModel!.NoticesUpdated
+              .AsObservable()
+              .ObserveOn(RxSchedulers.MainThreadScheduler)
+              .Subscribe(notices => _ = ShowMiaomiaoAccountNoticesAsync(notices))
+              .DisposeWith(disposables);
+
             AppEvents.AppExitRequested
               .AsObservable()
               .ObserveOn(RxSchedulers.MainThreadScheduler)
@@ -179,6 +190,11 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         _isWindowOpened = true;
         Opened -= MainWindow_Opened;
         await ShowMiaomiaoPromptsAsync();
+        if (contentAccount.Content is MiaomiaoAccountView { ViewModel: { } accountViewModel })
+        {
+            await accountViewModel.OnWindowActivatedAsync();
+            await ShowMiaomiaoAccountNoticesAsync(accountViewModel.Notices.ToList());
+        }
     }
 
     private async void MainWindow_Activated(object? sender, EventArgs e)
@@ -247,6 +263,40 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         finally
         {
             _miaomiaoPromptGate.Release();
+        }
+    }
+
+    private async Task ShowMiaomiaoAccountNoticesAsync(IReadOnlyList<MiaomiaoNotice> notices)
+    {
+        if (!_isWindowOpened || notices.Count == 0)
+        {
+            return;
+        }
+
+        await _miaomiaoNoticeGate.WaitAsync();
+        try
+        {
+            foreach (var notice in notices)
+            {
+                var identity = notice.Id is { } id
+                    ? $"id:{id}"
+                    : $"content:{notice.Title}:{notice.CreatedAt}:{notice.Content.GetHashCode(StringComparison.Ordinal)}";
+                if (!_shownMiaomiaoNotices.Add(identity))
+                {
+                    continue;
+                }
+
+                ShowHideWindow(true);
+                await DialogHost.Show(new MiaomiaoNoticeDialog(notice));
+            }
+        }
+        catch (Exception ex)
+        {
+            Logging.SaveLog("Show Miaomiao account notices", ex);
+        }
+        finally
+        {
+            _miaomiaoNoticeGate.Release();
         }
     }
 
@@ -397,14 +447,19 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
 
     #region UI
 
-    private void NavConnection_Click(object? sender, RoutedEventArgs e)
+    private void NavHome_Click(object? sender, RoutedEventArgs e)
     {
-        SetActivePage(pageConnection, navConnection);
+        SetActivePage(pageHome, navHome);
     }
 
-    private void NavAccount_Click(object? sender, RoutedEventArgs e)
+    private void NavPlans_Click(object? sender, RoutedEventArgs e)
     {
-        SetActivePage(pageAccount, navAccount);
+        ShowAccountSection(0, "套餐", navPlans);
+    }
+
+    private void NavOrders_Click(object? sender, RoutedEventArgs e)
+    {
+        ShowAccountSection(1, "订单", navOrders);
     }
 
     private void NavTools_Click(object? sender, RoutedEventArgs e)
@@ -412,14 +467,44 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         SetActivePage(pageTools, navTools);
     }
 
+    private void OpenPlans_Click(object? sender, RoutedEventArgs e)
+    {
+        ShowAccountSection(0, "套餐", navPlans);
+    }
+
+    private void OpenAllRoutes_Click(object? sender, RoutedEventArgs e)
+    {
+        SetActivePage(pageConnection, navHome);
+    }
+
+    private void ConnectionToggle_Click(object? sender, RoutedEventArgs e)
+    {
+        var statusBar = ViewModel.StatusBarViewModel;
+        statusBar.SystemProxySelected = statusBar.SystemProxySelected == (int)ESysProxyType.ForcedChange
+            ? (int)ESysProxyType.ForcedClear
+            : (int)ESysProxyType.ForcedChange;
+    }
+
+    private void ShowAccountSection(int index, string title, Button activeButton)
+    {
+        txtAccountPageTitle.Text = title;
+        if (contentAccount.Content is MiaomiaoAccountView accountView)
+        {
+            accountView.SelectSection(index);
+        }
+        SetActivePage(pageAccount, activeButton);
+    }
+
     private void SetActivePage(Control activePage, Button activeButton)
     {
+        pageHome.IsVisible = ReferenceEquals(activePage, pageHome);
         pageConnection.IsVisible = ReferenceEquals(activePage, pageConnection);
         pageAccount.IsVisible = ReferenceEquals(activePage, pageAccount);
         pageTools.IsVisible = ReferenceEquals(activePage, pageTools);
 
-        navConnection.Classes.Set("Active", ReferenceEquals(activeButton, navConnection));
-        navAccount.Classes.Set("Active", ReferenceEquals(activeButton, navAccount));
+        navHome.Classes.Set("Active", ReferenceEquals(activeButton, navHome));
+        navPlans.Classes.Set("Active", ReferenceEquals(activeButton, navPlans));
+        navOrders.Classes.Set("Active", ReferenceEquals(activeButton, navOrders));
         navTools.Classes.Set("Active", ReferenceEquals(activeButton, navTools));
     }
 

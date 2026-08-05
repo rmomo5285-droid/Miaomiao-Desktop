@@ -66,6 +66,37 @@ public class MiaomiaoAccountPolicyTests
         Assert.Equal("processing-new", result?.TradeNo);
     }
 
+    [Theory]
+    [InlineData("month_price", "月付")]
+    [InlineData("two_year_price", "两年付")]
+    [InlineData("onetime_price", "一次性")]
+    [InlineData("future_period", "future_period")]
+    public void FormatOrderPeriod_UsesFriendlyLabels(string period, string expected)
+    {
+        Assert.Equal(expected, MiaomiaoDisplayPolicy.FormatOrderPeriod(period));
+    }
+
+    [Theory]
+    [InlineData(79490, "¥794.90")]
+    [InlineData(1500, "¥15.00")]
+    [InlineData(0, "¥0.00")]
+    public void FormatOrderAmount_ConvertsCentsToCurrency(double amount, string expected)
+    {
+        Assert.Equal(expected, MiaomiaoDisplayPolicy.FormatOrderAmount((decimal)amount));
+    }
+
+    [Theory]
+    [InlineData(0, "待支付")]
+    [InlineData(1, "处理中")]
+    [InlineData(2, "已取消")]
+    [InlineData(3, "已完成")]
+    [InlineData(4, "已完成")]
+    [InlineData(99, "未知")]
+    public void FormatOrderStatus_UsesFriendlyLabels(int status, string expected)
+    {
+        Assert.Equal(expected, MiaomiaoDisplayPolicy.FormatOrderStatus(status));
+    }
+
     [Fact]
     public void ExtractLoginToken_NormalizesCurrentXboardBearerResponse()
     {

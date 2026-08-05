@@ -8,6 +8,11 @@ public partial class MiaomiaoAccountView : ReactiveUserControl<MiaomiaoAccountVi
         ViewModel = new MiaomiaoAccountViewModel();
     }
 
+    public void SelectSection(int index)
+    {
+        tabAccountSections.SelectedIndex = Math.Clamp(index, 0, 1);
+    }
+
     private void BillingPeriod_SelectionChanged(object? sender, SelectionChangedEventArgs e)
     {
         if (ViewModel != null && cmbBillingPeriod.SelectedItem is ComboBoxItem { Tag: string period })

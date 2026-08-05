@@ -6,7 +6,7 @@
     </Design.PreviewWith>
 
     <Style Selector="DataGrid">
-        <Setter Property="RowHeight" Value="34" />
+        <Setter Property="RowHeight" Value="42" />
         <Setter Property="Background" Value="{DynamicResource MiaomiaoSurfaceBrush}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="ScrollViewer.AllowAutoHide" Value="False" />
@@ -84,8 +84,8 @@
     </Style>
 
     <Style Selector="Button.MiaomiaoNav.Active">
-        <Setter Property="Background" Value="{DynamicResource MiaomiaoPrimaryBrush}" />
-        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoOnPrimaryBrush}" />
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoSidebarSurfaceBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoPrimaryBrush}" />
     </Style>
 
     <Style Selector="Button.MiaomiaoPrimary">
@@ -135,8 +135,39 @@
         <Setter Property="BorderBrush" Value="{DynamicResource MiaomiaoPrimaryBrush}" />
     </Style>
 
+    <Style Selector="Button.MiaomiaoConnect">
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoPrimaryBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoOnPrimaryBrush}" />
+        <Setter Property="BorderThickness" Value="0" />
+        <Setter Property="CornerRadius" Value="87" />
+    </Style>
+
+    <Style Selector="Button.MiaomiaoConnect:pointerover">
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoPrimaryHoverBrush}" />
+    </Style>
+
+    <Style Selector="Button.MiaomiaoConnect PathIcon">
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoOnPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="ListBox.MiaomiaoRouteList">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style Selector="ListBox.MiaomiaoRouteList > ListBoxItem">
+        <Setter Property="Margin" Value="0,2" />
+        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="CornerRadius" Value="6" />
+    </Style>
+
+    <Style Selector="ListBox.MiaomiaoRouteList > ListBoxItem:selected">
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoPrimarySoftBrush}" />
+        <Setter Property="Foreground" Value="{DynamicResource MiaomiaoPrimarySoftForegroundBrush}" />
+    </Style>
+
     <Style Selector="TextBlock.MiaomiaoPageTitle">
-        <Setter Property="FontSize" Value="24" />
+        <Setter Property="FontSize" Value="20" />
         <Setter Property="FontWeight" Value="SemiBold" />
         <Setter Property="Foreground" Value="{DynamicResource MiaomiaoForegroundBrush}" />
     </Style>

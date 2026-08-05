@@ -72,6 +72,70 @@ public sealed class MiaomiaoBytesConverter : IValueConverter
     }
 }
 
+public sealed class MiaomiaoRemainingBytesConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        if (value is not MiaomiaoSubscriptionInfo subscription || subscription.TransferEnable is not { } total)
+        {
+            return "-";
+        }
+
+        var used = Math.Max(0, (subscription.UploadBytes ?? 0) + (subscription.DownloadBytes ?? 0));
+        return Utils.HumanFy(Math.Max(0, total - used));
+    }
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+    {
+        throw new NotSupportedException();
+    }
+}
+
+public sealed class MiaomiaoOrderPeriodConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => MiaomiaoDisplayPolicy.FormatOrderPeriod(value as string);
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public sealed class MiaomiaoOrderAmountConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => MiaomiaoDisplayPolicy.FormatOrderAmount(value as decimal?);
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public sealed class MiaomiaoOrderStatusConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => MiaomiaoDisplayPolicy.FormatOrderStatus(value as int?);
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public sealed class MiaomiaoProxyStateTextConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is int state && state == (int)ESysProxyType.ForcedChange ? "已连接\n点击断开" : "开启连接";
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
+public sealed class MiaomiaoSpeedLimitConverter : IValueConverter
+{
+    public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => value is int speed && speed > 0 ? $"限速 {speed} Mbps" : "不限速";
+
+    public object ConvertBack(object? value, Type targetType, object? parameter, CultureInfo culture)
+        => throw new NotSupportedException();
+}
+
 public sealed partial class MiaomiaoNoticeTextConverter : IValueConverter
 {
     public object Convert(object? value, Type targetType, object? parameter, CultureInfo culture)
