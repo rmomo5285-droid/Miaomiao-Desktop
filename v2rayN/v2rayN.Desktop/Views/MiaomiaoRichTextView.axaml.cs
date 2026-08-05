@@ -86,7 +86,8 @@ public partial class MiaomiaoRichTextView : UserControl
                 {
                     Height = 1,
                     Margin = new Thickness(0, 3),
-                    Background = FindBrush("MiaomiaoBorderBrush")
+                    Background = Brushes.Gray,
+                    Opacity = 0.3
                 });
                 continue;
             }
@@ -112,9 +113,8 @@ public partial class MiaomiaoRichTextView : UserControl
                 contentPanel.Children.Add(new Border
                 {
                     Padding = new Thickness(10, 7),
-                    BorderBrush = FindBrush("MiaomiaoPrimaryBrush"),
+                    BorderBrush = Brushes.Gray,
                     BorderThickness = new Thickness(3, 0, 0, 0),
-                    Background = FindBrush("MiaomiaoSurfaceAltBrush"),
                     Child = CreateText(CleanInline(line[2..]), Compact ? 12 : 13, FontWeight.Normal, muted: true)
                 });
                 continue;
@@ -163,13 +163,8 @@ public partial class MiaomiaoRichTextView : UserControl
             FontSize = fontSize,
             FontWeight = weight,
             TextWrapping = TextWrapping.Wrap,
-            Foreground = FindBrush(muted ? "MiaomiaoMutedForegroundBrush" : "MiaomiaoForegroundBrush")
+            Opacity = muted ? 0.72 : 1
         };
-    }
-
-    private IBrush? FindBrush(string key)
-    {
-        return TryFindResource(key, out var value) ? value as IBrush : null;
     }
 
     private static string Normalize(string? source)
