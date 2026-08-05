@@ -87,8 +87,9 @@ jobs:
           find "$output" -type f -name '*.pdb' -delete
           install -m 0644 ./LICENSE "$output/LICENSE"
           install -m 0644 ./THIRD_PARTY_NOTICES.md "$output/THIRD_PARTY_NOTICES.md"
+          source_commit="$(git rev-parse HEAD)"
           printf 'preview build\nsource ref: %s\nsource commit: %s\nplatform: %s\n' \
-            "${{ inputs.source_ref }}" "$GITHUB_SHA" "${{ matrix.platform }}" \
+            "${{ inputs.source_ref }}" "$source_commit" "${{ matrix.platform }}" \
             > "$output/PREVIEW-BUILD.txt"
 
       - name: Stage verified proxy cores
