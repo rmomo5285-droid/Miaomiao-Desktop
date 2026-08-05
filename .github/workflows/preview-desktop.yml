@@ -1,0 +1,107 @@
+name: Miaomiao desktop preview build
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Git ref to build
+        required: true
+        default: main
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: miaomiao-desktop-preview-${{ inputs.source_ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_SDK_VERSION: 10.0.100
+  DESKTOP_PROJECT: ./v2rayN/v2rayN.Desktop/v2rayN.Desktop.csproj
+  HELPER_PROJECT: ./v2rayN/AmazTool/AmazTool.csproj
+
+jobs:
+  build:
+    name: Preview ${{ matrix.platform }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: windows-x64
+            runner: windows-2025
+            rid: win-x64
+            executable: Miaomiao.exe
+            helper: MiaomiaoHelper.exe
+            archive: zip
+          - platform: macos-x64
+            runner: macos-15
+            rid: osx-x64
+            executable: Miaomiao
+            helper: MiaomiaoHelper
+            archive: tar.gz
+          - platform: linux-x64
+            runner: ubuntu-22.04
+            rid: linux-x64
+            executable: Miaomiao
+            helper: MiaomiaoHelper
+            archive: tar.gz
+
+    steps:
+      - name: Checkout requested source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.source_ref }}
+          fetch-depth: 1
+          submodules: recursive
+          persist-credentials: false
+
+      - name: Set up pinned .NET SDK
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: ${{ env.DOTNET_SDK_VERSION }}
+
+      - name: Publish preview executable
+        shell: bash
+        env:
+          RID: ${{ matrix.rid }}
+          EXECUTABLE: ${{ matrix.executable }}
+          HELPER: ${{ matrix.helper }}
+        run: |
+          set -euo pipefail
+          output="$GITHUB_WORKSPACE/stage/${{ matrix.platform }}"
+          mkdir -p "$output"
+          dotnet publish "$DESKTOP_PROJECT" -c Release -r "$RID" \
+            -p:SelfContained=true -p:EnableWindowsTargeting=true \
+            -p:DebugType=None -p:DebugSymbols=false -o "$output"
+          dotnet publish "$HELPER_PROJECT" -c Release -r "$RID" \
+            -p:SelfContained=true -p:PublishTrimmed=true \
+            -p:EnableWindowsTargeting=true -p:DebugType=None \
+            -p:DebugSymbols=false -o "$output"
+          test -f "$output/$EXECUTABLE"
+          test -f "$output/$HELPER"
+          find "$output" -type f -name '*.pdb' -delete
+          install -m 0644 ./LICENSE "$output/LICENSE"
+          install -m 0644 ./THIRD_PARTY_NOTICES.md "$output/THIRD_PARTY_NOTICES.md"
+          printf 'preview build\nsource ref: %s\nsource commit: %s\nplatform: %s\n' \
+            "${{ inputs.source_ref }}" "$GITHUB_SHA" "${{ matrix.platform }}" \
+            > "$output/PREVIEW-BUILD.txt"
+
+      - name: Archive Windows preview
+        if: matrix.archive == 'zip'
+        shell: pwsh
+        run: Compress-Archive -Path "stage/${{ matrix.platform }}/*" -DestinationPath "Miaomiao-preview-${{ matrix.platform }}.zip" -CompressionLevel Fastest
+
+      - name: Archive Unix preview
+        if: matrix.archive == 'tar.gz'
+        shell: bash
+        run: tar -czf "Miaomiao-preview-${{ matrix.platform }}.tar.gz" -C "stage/${{ matrix.platform }}" .
+
+      - name: Upload preview artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: miaomiao-preview-${{ matrix.platform }}
+          path: Miaomiao-preview-${{ matrix.platform }}.${{ matrix.archive }}
+          if-no-files-found: error
+          retention-days: 14
