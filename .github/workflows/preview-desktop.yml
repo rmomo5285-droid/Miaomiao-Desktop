@@ -32,18 +32,21 @@ jobs:
           - platform: windows-x64
             runner: windows-2025
             rid: win-x64
+            core_target: windows-x64
             executable: Miaomiao.exe
             helper: MiaomiaoHelper.exe
             archive: zip
           - platform: macos-x64
             runner: macos-15
             rid: osx-x64
+            core_target: macos-x64
             executable: Miaomiao
             helper: MiaomiaoHelper
             archive: tar.gz
           - platform: linux-x64
             runner: ubuntu-22.04
             rid: linux-x64
+            core_target: linux-x64
             executable: Miaomiao
             helper: MiaomiaoHelper
             archive: tar.gz
@@ -87,6 +90,21 @@ jobs:
           printf 'preview build\nsource ref: %s\nsource commit: %s\nplatform: %s\n' \
             "${{ inputs.source_ref }}" "$GITHUB_SHA" "${{ matrix.platform }}" \
             > "$output/PREVIEW-BUILD.txt"
+
+      - name: Stage verified proxy cores
+        shell: bash
+        env:
+          CORE_TARGET: ${{ matrix.core_target }}
+        run: |
+          set -euo pipefail
+          source packaging/pinned-core-bundle.sh
+          output="$GITHUB_WORKSPACE/stage/${{ matrix.platform }}"
+          miaomiao_stage_pinned_core_bundle "$CORE_TARGET" "$output"
+          if [[ "${{ matrix.platform }}" == windows-* ]]; then
+            test -f "$output/bin/sing_box/sing-box.exe"
+          else
+            test -f "$output/bin/sing_box/sing-box"
+          fi
 
       - name: Archive Windows preview
         if: matrix.archive == 'zip'
