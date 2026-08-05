@@ -410,6 +410,7 @@
     </Style>
 
     <Style Selector="Border.MiaomiaoSettingsGroup">
+        <Setter Property="Padding" Value="7" />
         <Setter Property="Background" Value="{DynamicResource MiaomiaoSurfaceBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource MiaomiaoBorderBrush}" />
         <Setter Property="BorderThickness" Value="1" />
@@ -417,13 +418,14 @@
     </Style>
 
     <Style Selector="Button.MiaomiaoSettingsRow">
-        <Setter Property="MinHeight" Value="76" />
-        <Setter Property="Padding" Value="18,12" />
+        <Setter Property="MinHeight" Value="78" />
+        <Setter Property="Padding" Value="14,11" />
+        <Setter Property="HorizontalAlignment" Value="Stretch" />
         <Setter Property="HorizontalContentAlignment" Value="Stretch" />
         <Setter Property="Background" Value="Transparent" />
         <Setter Property="Foreground" Value="{DynamicResource MiaomiaoForegroundBrush}" />
         <Setter Property="BorderThickness" Value="0" />
-        <Setter Property="CornerRadius" Value="0" />
+        <Setter Property="CornerRadius" Value="6" />
     </Style>
 
     <Style Selector="Button.MiaomiaoSettingsRow:pointerover">
