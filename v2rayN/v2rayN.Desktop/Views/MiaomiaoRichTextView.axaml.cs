@@ -27,8 +27,8 @@ public partial class MiaomiaoRichTextView : UserControl
         "<(br\\s*/?|/p|/div|/section|/article|/blockquote|hr\\s*/?)>",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
     private static readonly Regex TagRegex = new("<[^>]+>", RegexOptions.Singleline | RegexOptions.Compiled);
-    private static readonly Regex MarkdownImageRegex = new("!\\[([^]]*)]\([^)]*\)", RegexOptions.Compiled);
-    private static readonly Regex MarkdownLinkRegex = new("\\[([^]]+)]\\((https://[^)]+)\)", RegexOptions.Compiled);
+    private static readonly Regex MarkdownImageRegex = new(@"!\[([^]]*)]\([^)]*\)", RegexOptions.Compiled);
+    private static readonly Regex MarkdownLinkRegex = new(@"\[([^]]+)]\((https://[^)]+)\)", RegexOptions.Compiled);
     private static readonly Regex MarkdownMarkerRegex = new("(\\*\\*|__|~~|`|(?<!\\*)\\*(?!\\*)|(?<!_)_(?!_))", RegexOptions.Compiled);
 
     public MiaomiaoRichTextView()
