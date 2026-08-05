@@ -74,6 +74,11 @@
         <Setter Property="CornerRadius" Value="8" />
     </Style>
 
+    <Style Selector="Border.MiaomiaoHero">
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoHeroBrush}" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+
     <Style Selector="Button.MiaomiaoNav">
         <Setter Property="Height" Value="44" />
         <Setter Property="Margin" Value="10,3" />
@@ -143,6 +148,30 @@
     </Style>
 
     <Style Selector="ListBox.MiaomiaoPlanList > ListBoxItem:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource MiaomiaoPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="ListBox.MiaomiaoPlanGallery">
+        <Setter Property="Background" Value="Transparent" />
+        <Setter Property="BorderThickness" Value="0" />
+    </Style>
+
+    <Style Selector="ListBox.MiaomiaoPlanGallery > ListBoxItem">
+        <Setter Property="MinHeight" Value="180" />
+        <Setter Property="Margin" Value="5" />
+        <Setter Property="Padding" Value="18" />
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoSurfaceBrush}" />
+        <Setter Property="BorderBrush" Value="{DynamicResource MiaomiaoBorderBrush}" />
+        <Setter Property="BorderThickness" Value="1" />
+        <Setter Property="CornerRadius" Value="8" />
+    </Style>
+
+    <Style Selector="ListBox.MiaomiaoPlanGallery > ListBoxItem:pointerover">
+        <Setter Property="BorderBrush" Value="{DynamicResource MiaomiaoPrimaryBrush}" />
+    </Style>
+
+    <Style Selector="ListBox.MiaomiaoPlanGallery > ListBoxItem:selected">
+        <Setter Property="Background" Value="{DynamicResource MiaomiaoPrimarySoftBrush}" />
         <Setter Property="BorderBrush" Value="{DynamicResource MiaomiaoPrimaryBrush}" />
     </Style>
 
