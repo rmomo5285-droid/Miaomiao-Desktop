@@ -173,6 +173,61 @@ public class MiaomiaoAccountPolicyTests
     }
 
     [Fact]
+    public void ResolveSubscriptionPlan_UsesPlanListWhenSubscriptionOnlyHasPlanId()
+    {
+        var subscription = new MiaomiaoSubscriptionInfo { PlanId = 16 };
+        var plans = new[]
+        {
+            new MiaomiaoPlan { Id = 15, Name = "其他套餐" },
+            new MiaomiaoPlan { Id = 16, Name = "尊享流量包" }
+        };
+
+        var resolved = MiaomiaoDisplayPolicy.ResolveSubscriptionPlan(subscription, plans);
+
+        Assert.Equal("尊享流量包", resolved.Plan?.Name);
+    }
+
+    [Fact]
+    public void ResolveSubscriptionPlan_PreservesEmbeddedPlanName()
+    {
+        var subscription = new MiaomiaoSubscriptionInfo
+        {
+            PlanId = 16,
+            Plan = new MiaomiaoPlanSummary { Id = 16, Name = "接口套餐名" }
+        };
+
+        var resolved = MiaomiaoDisplayPolicy.ResolveSubscriptionPlan(
+            subscription,
+            new[] { new MiaomiaoPlan { Id = 16, Name = "列表套餐名" } });
+
+        Assert.Equal("接口套餐名", resolved.Plan?.Name);
+    }
+
+    [Fact]
+    public void TrafficPolicy_FormatsNormalByteTotalsAsGigabytes()
+    {
+        var subscription = new MiaomiaoSubscriptionInfo
+        {
+            TransferEnable = 10L * 1024 * 1024 * 1024,
+            UploadBytes = 1L * 1024 * 1024 * 1024,
+            DownloadBytes = 1L * 1024 * 1024 * 1024
+        };
+
+        Assert.Equal("8 GB", MiaomiaoTrafficPolicy.FormatRemaining(subscription));
+    }
+
+    [Fact]
+    public void TrafficPolicy_FormatsLegacyPanelScaleAsGigabytes()
+    {
+        var subscription = new MiaomiaoSubscriptionInfo
+        {
+            TransferEnable = (long)(800.7m * 1024m * 1024m * 1024m * 1024m)
+        };
+
+        Assert.Equal("800.7 GB", MiaomiaoTrafficPolicy.FormatRemaining(subscription));
+    }
+
+    [Fact]
     public void ManagedSubscriptionPolicy_RecognizesOnlyTheProtectedMarker()
     {
         Assert.True(MiaomiaoManagedSubscriptionPolicy.IsManaged(new SubItem

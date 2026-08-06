@@ -17,6 +17,7 @@ miaomiao_stage_pinned_core_bundle() {
   local repo_root lock_file row locked_target url expected_sha actual_sha temp_dir bundle_root entry
   local -a bundle_roots=()
 
+  [[ -n "$output_root" && "$output_root" != "/" ]] || miaomiao_die "Refusing unsafe core output root." || return 1
   repo_root="$(miaomiao_repo_root)" || return 1
   lock_file="$repo_root/packaging/core-bundles.lock.tsv"
   [[ -f "$lock_file" ]] || miaomiao_die "Missing core lock file: $lock_file" || return 1
@@ -25,6 +26,7 @@ miaomiao_stage_pinned_core_bundle() {
   [[ -n "$row" ]] || miaomiao_die "No core bundle lock entry for target '$target'." || return 1
 
   IFS=$'\t' read -r locked_target url expected_sha <<< "$row"
+  [[ "$locked_target" == "$target" ]] || miaomiao_die "Core bundle lock entry does not match target '$target'." || return 1
   if [[ ! "$url" =~ ^https:// ]] || [[ ! "$expected_sha" =~ ^[0-9A-Fa-f]{64}$ ]]; then
     miaomiao_die "Core bundle '$target' is not pinned. Add an immutable HTTPS URL and SHA-256 to packaging/core-bundles.lock.tsv before releasing." || return 1
   fi
@@ -97,7 +99,7 @@ miaomiao_stage_pinned_core_bundle() {
     return 1
   fi
 
-  rm -rf "$output_root/bin"
+  rm -rf "${output_root:?}/bin"
   mkdir -p "$output_root/bin/xray" "$output_root/bin/sing_box" "$output_root/bin/srss"
 
   case "$target" in

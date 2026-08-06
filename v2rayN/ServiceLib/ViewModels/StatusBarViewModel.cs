@@ -383,14 +383,7 @@ public partial class StatusBarViewModel : MyReactiveObject
 
         if (blChange)
         {
-            try
-            {
-                await DispatcherRefreshIconInteraction.Handle(RxVoid.Default);
-            }
-            catch (UnhandledInteractionException<RxVoid, RxVoid>)
-            {
-                // Ignore
-            }
+            await TryRefreshIconAsync();
         }
     }
 
@@ -426,7 +419,24 @@ public partial class StatusBarViewModel : MyReactiveObject
         {
             NoticeManager.Instance.SendMessageEx(ResUI.TipChangeRouting);
             ReloadRequested.Publish();
-            await DispatcherRefreshIconInteraction.Handle(RxVoid.Default);
+            await TryRefreshIconAsync();
+        }
+    }
+
+    private async Task TryRefreshIconAsync()
+    {
+        await HandleOptionalInteractionAsync(DispatcherRefreshIconInteraction);
+    }
+
+    internal static async Task HandleOptionalInteractionAsync(Interaction<RxVoid, RxVoid> interaction)
+    {
+        try
+        {
+            await interaction.Handle(RxVoid.Default);
+        }
+        catch (UnhandledInteractionException<RxVoid, RxVoid>)
+        {
+            // The redesigned main window does not host the legacy status icon view.
         }
     }
 

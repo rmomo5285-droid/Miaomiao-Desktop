@@ -18,6 +18,7 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
     private readonly HashSet<long> _shownMiaomiaoDesktopUpdateBuilds = [];
     private readonly HashSet<string> _shownMiaomiaoNotices = [];
     private BackupAndRestoreView? _backupAndRestoreView;
+    private bool _isApplyingRouteSelection;
     private bool _blCloseByUser = false;
     private bool _isWindowOpened;
 
@@ -452,14 +453,19 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         SetActivePage(pageHome, navHome);
     }
 
-    private void NavPlans_Click(object? sender, RoutedEventArgs e)
+    private void NavRoutes_Click(object? sender, RoutedEventArgs e)
     {
-        ShowAccountSection(0, "套餐", navPlans);
+        SetActivePage(pageConnection, navRoutes);
     }
 
-    private void NavOrders_Click(object? sender, RoutedEventArgs e)
+    private void NavAccount_Click(object? sender, RoutedEventArgs e)
     {
-        ShowAccountSection(1, "订单", navOrders);
+        ShowAccountSection(0, "账户", navAccount);
+    }
+
+    private void NavPlans_Click(object? sender, RoutedEventArgs e)
+    {
+        ShowAccountSection(1, "套餐", navPlans);
     }
 
     private void NavTools_Click(object? sender, RoutedEventArgs e)
@@ -469,12 +475,64 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
 
     private void OpenPlans_Click(object? sender, RoutedEventArgs e)
     {
-        ShowAccountSection(0, "套餐", navPlans);
+        ShowAccountSection(1, "套餐", navPlans);
+    }
+
+    private void OpenAccount_Click(object? sender, RoutedEventArgs e)
+    {
+        ShowAccountSection(0, "账户", navAccount);
+    }
+
+    private void OpenNotices_Click(object? sender, RoutedEventArgs e)
+    {
+        ShowAccountSection(3, "公告", navAccount);
     }
 
     private void OpenAllRoutes_Click(object? sender, RoutedEventArgs e)
     {
-        SetActivePage(pageConnection, navHome);
+        SetActivePage(pageConnection, navRoutes);
+    }
+
+    private void MiaomiaoRoutes_SelectionChanged(object? sender, SelectionChangedEventArgs e)
+    {
+        if (_isApplyingRouteSelection
+            || sender is not ListBox listBox
+            || ViewModel is null)
+        {
+            return;
+        }
+
+        ViewModel.ProfilesViewModel.SelectedProfiles = listBox.SelectedItems
+            .OfType<ProfileItemModel>()
+            .OrderBy(item => item.Sort)
+            .ToList();
+
+        if (listBox.SelectedItem is ProfileItemModel selected)
+        {
+            ViewModel.ProfilesViewModel.SelectedProfile = selected;
+        }
+    }
+
+    private async void MiaomiaoRoutes_DoubleTapped(object? sender, TappedEventArgs e)
+    {
+        if (_isApplyingRouteSelection
+            || sender is not ListBox { SelectedItem: ProfileItemModel selected }
+            || selected.IndexId.IsNullOrEmpty()
+            || ViewModel is null
+            || _config.IndexId == selected.IndexId)
+        {
+            return;
+        }
+
+        try
+        {
+            _isApplyingRouteSelection = true;
+            await ViewModel.ProfilesViewModel.SetDefaultServer(selected.IndexId);
+        }
+        finally
+        {
+            _isApplyingRouteSelection = false;
+        }
     }
 
     private void ConnectionToggle_Click(object? sender, RoutedEventArgs e)
@@ -503,8 +561,9 @@ public partial class MainWindow : WindowBase<MainWindowViewModel>
         pageTools.IsVisible = ReferenceEquals(activePage, pageTools);
 
         navHome.Classes.Set("Active", ReferenceEquals(activeButton, navHome));
+        navRoutes.Classes.Set("Active", ReferenceEquals(activeButton, navRoutes));
+        navAccount.Classes.Set("Active", ReferenceEquals(activeButton, navAccount));
         navPlans.Classes.Set("Active", ReferenceEquals(activeButton, navPlans));
-        navOrders.Classes.Set("Active", ReferenceEquals(activeButton, navOrders));
         navTools.Classes.Set("Active", ReferenceEquals(activeButton, navTools));
     }
 
