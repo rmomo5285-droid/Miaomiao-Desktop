@@ -1,0 +1,149 @@
+name: Backfill Windows installers
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Existing Miaomiao desktop release tag, for example v7.24.6
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: miaomiao-windows-installer-backfill-${{ inputs.release_tag }}
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: ${{ inputs.release_tag }}
+
+jobs:
+  windows:
+    name: Windows installer ${{ matrix.arch }}
+    runs-on: windows-2025
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [x64, arm64]
+    steps:
+      - name: Checkout installer definition
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Download released Windows archive
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          if ($env:RELEASE_TAG -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+$') {
+            throw 'release_tag must be a stable semantic version such as v7.24.6.'
+          }
+          $version = $env:RELEASE_TAG.Substring(1)
+          $downloads = Join-Path $env:GITHUB_WORKSPACE 'downloads'
+          New-Item -ItemType Directory -Force -Path $downloads | Out-Null
+          gh release download $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY `
+            --pattern "Miaomiao-$version-windows-${{ matrix.arch }}.zip" --dir $downloads
+          $zip = Join-Path $downloads "Miaomiao-$version-windows-${{ matrix.arch }}.zip"
+          if (-not (Test-Path -LiteralPath $zip)) { throw "Released archive was not found: $zip" }
+          "VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding ascii
+
+      - name: Build installer
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $downloads = Join-Path $env:GITHUB_WORKSPACE 'downloads'
+          $zip = Join-Path $downloads "Miaomiao-$env:VERSION-windows-${{ matrix.arch }}.zip"
+          $payload = Join-Path $env:RUNNER_TEMP "miaomiao-payload-${{ matrix.arch }}"
+          Expand-Archive -LiteralPath $zip -DestinationPath $payload -Force
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path -LiteralPath $iscc)) { throw "Inno Setup compiler not found: $iscc" }
+          $icon = Join-Path $env:GITHUB_WORKSPACE 'v2rayN/v2rayN.Desktop/v2rayN.ico'
+          & $iscc "/DAppVersion=$env:VERSION" "/DArch=${{ matrix.arch }}" `
+            "/DPayloadDir=$payload" "/DOutputDir=$env:GITHUB_WORKSPACE" `
+            "/DInstallerIcon=$icon" 'packaging/windows-installer.iss'
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed with exit code $LASTEXITCODE" }
+          $installer = Join-Path $env:GITHUB_WORKSPACE "Miaomiao-$env:VERSION-windows-${{ matrix.arch }}-setup.exe"
+          if (-not (Test-Path -LiteralPath $installer)) { throw 'Installer was not created.' }
+
+      - name: Smoke-test x64 installation
+        if: matrix.arch == 'x64'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $installer = Join-Path $env:GITHUB_WORKSPACE "Miaomiao-$env:VERSION-windows-x64-setup.exe"
+          $target = Join-Path $env:RUNNER_TEMP 'miaomiao-installer-smoke'
+          $process = Start-Process -FilePath $installer -ArgumentList @(
+            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$target"
+          ) -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Installer smoke test failed with $($process.ExitCode)" }
+          if (-not (Test-Path (Join-Path $target 'Miaomiao.exe'))) { throw 'Installed Miaomiao.exe was not found.' }
+          $process = Start-Process -FilePath (Join-Path $target 'unins000.exe') `
+            -ArgumentList @('/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART') -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Uninstaller smoke test failed with $($process.ExitCode)" }
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: miaomiao-windows-installer-${{ matrix.arch }}
+          path: Miaomiao-*-windows-${{ matrix.arch }}-setup.exe
+          if-no-files-found: error
+          retention-days: 14
+
+  release:
+    name: Sign and attach installers
+    needs: windows
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Download installer artifacts
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: miaomiao-windows-installer-*
+          path: dist
+          merge-multiple: true
+
+      - name: Sign installers and refresh checksums
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GPG_PRIVATE_KEY: ${{ secrets.MIAOMIAO_RELEASE_GPG_PRIVATE_KEY }}
+          EXPECTED_FINGERPRINT: ${{ secrets.MIAOMIAO_RELEASE_GPG_FINGERPRINT }}
+          GPG_PASSPHRASE: ${{ secrets.MIAOMIAO_RELEASE_GPG_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          [[ -n "$GPG_PRIVATE_KEY" && -n "$EXPECTED_FINGERPRINT" && -n "$GPG_PASSPHRASE" ]]
+          [[ "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          mkdir -p release-files
+          gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" \
+            --pattern SHA256SUMS --pattern SHA256SUMS.asc \
+            --pattern miaomiao-release-public-key.asc --dir release-files
+          gpg --import release-files/miaomiao-release-public-key.asc
+          gpg --verify release-files/SHA256SUMS.asc release-files/SHA256SUMS
+          cd dist
+          compgen -G 'Miaomiao-*-setup.exe' >/dev/null
+          awk '$2 !~ /-setup\.exe$/ {print}' ../release-files/SHA256SUMS > SHA256SUMS
+          sha256sum Miaomiao-*-setup.exe | sort -k2 >> SHA256SUMS
+          gpg_home="$RUNNER_TEMP/miaomiao-gnupg"
+          passphrase_file="$RUNNER_TEMP/miaomiao-gpg-passphrase"
+          umask 077
+          install -m 700 -d "$gpg_home"
+          printf '%s' "$GPG_PASSPHRASE" > "$passphrase_file"
+          printf '%s' "$GPG_PRIVATE_KEY" | gpg --homedir "$gpg_home" --batch --import
+          key="$(gpg --homedir "$gpg_home" --batch --with-colons --list-secret-keys | awk -F: '/^fpr:/{print $10; exit}')"
+          expected="$(printf '%s' "$EXPECTED_FINGERPRINT" | tr -d ' :' | tr '[:lower:]' '[:upper:]')"
+          [[ -n "$key" && "$key" == "$expected" ]]
+          gpg --homedir "$gpg_home" --batch --yes --pinentry-mode loopback \
+            --passphrase-file "$passphrase_file" --armor --local-user "$key" --detach-sign SHA256SUMS
+          while IFS= read -r file; do
+            gpg --homedir "$gpg_home" --batch --yes --pinentry-mode loopback \
+              --passphrase-file "$passphrase_file" --armor --local-user "$key" --detach-sign "$file"
+          done < <(awk '{print $2}' SHA256SUMS | grep -- '-setup\.exe$')
+          rm -rf "$gpg_home" "$passphrase_file"
+          gh release upload "$RELEASE_TAG" Miaomiao-*-setup.exe Miaomiao-*-setup.exe.asc \
+            SHA256SUMS SHA256SUMS.asc --repo "$GITHUB_REPOSITORY" --clobber
