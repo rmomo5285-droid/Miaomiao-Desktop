@@ -294,6 +294,28 @@ public sealed record MiaomiaoOrder
 
 public static class MiaomiaoDisplayPolicy
 {
+    public static MiaomiaoSubscriptionInfo ResolveSubscriptionPlan(
+        MiaomiaoSubscriptionInfo subscription,
+        IEnumerable<MiaomiaoPlan> plans)
+    {
+        if (subscription.Plan?.Name is { Length: > 0 } || subscription.PlanId is not { } planId)
+        {
+            return subscription;
+        }
+
+        var plan = plans.FirstOrDefault(item => item.Id == planId);
+        return plan is null
+            ? subscription
+            : subscription with
+            {
+                Plan = new MiaomiaoPlanSummary
+                {
+                    Id = plan.Id,
+                    Name = plan.Name
+                }
+            };
+    }
+
     public static string FormatOrderPeriod(string? period) => period switch
     {
         "month_price" => "月付",

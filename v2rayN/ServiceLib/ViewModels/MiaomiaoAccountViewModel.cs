@@ -395,8 +395,11 @@ public partial class MiaomiaoAccountViewModel : MyReactiveObject
         await Task.WhenAll(userTask, subscriptionTask, plansTask, noticesTask, ordersTask, paymentMethodsTask);
 
         CurrentUser = await userTask;
-        CurrentSubscription = await subscriptionTask;
-        ReplaceItems(Plans, (await plansTask).Where(plan => plan.Show));
+        var plans = await plansTask;
+        CurrentSubscription = MiaomiaoDisplayPolicy.ResolveSubscriptionPlan(
+            await subscriptionTask,
+            plans);
+        ReplaceItems(Plans, plans.Where(plan => plan.Show));
         ReplaceItems(Notices, (await noticesTask).Where(notice => notice.Show));
         NoticesUpdated.Publish(Notices.ToList());
         var orders = await ordersTask;
