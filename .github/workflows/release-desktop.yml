@@ -187,11 +187,57 @@ jobs:
           Compress-Archive -Path (Join-Path $root '*') -DestinationPath $archive -CompressionLevel Fastest
           if (-not (Test-Path -LiteralPath $archive)) { throw 'Windows archive was not created.' }
 
+      - name: Create Windows installer
+        shell: pwsh
+        env:
+          ARCH: ${{ matrix.arch }}
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (-not (Test-Path -LiteralPath $iscc)) {
+            throw "Inno Setup compiler was not found at $iscc"
+          }
+          $payload = Join-Path $env:GITHUB_WORKSPACE "stage/Miaomiao-windows-$env:ARCH"
+          $icon = Join-Path $env:GITHUB_WORKSPACE 'v2rayN/v2rayN.Desktop/v2rayN.ico'
+          & $iscc "/DAppVersion=$env:VERSION" "/DArch=$env:ARCH" `
+            "/DPayloadDir=$payload" "/DOutputDir=$env:GITHUB_WORKSPACE" `
+            "/DInstallerIcon=$icon" 'packaging/windows-installer.iss'
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed with exit code $LASTEXITCODE" }
+          $installer = Join-Path $env:GITHUB_WORKSPACE "Miaomiao-$env:VERSION-windows-$env:ARCH-setup.exe"
+          if (-not (Test-Path -LiteralPath $installer)) {
+            throw 'Windows installer was not created.'
+          }
+
+      - name: Smoke-test x64 installer
+        if: matrix.arch == 'x64'
+        shell: pwsh
+        env:
+          VERSION: ${{ needs.validate.outputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $installer = Join-Path $env:GITHUB_WORKSPACE "Miaomiao-$env:VERSION-windows-x64-setup.exe"
+          $target = Join-Path $env:RUNNER_TEMP 'miaomiao-installer-smoke'
+          $process = Start-Process -FilePath $installer -ArgumentList @(
+            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', "/DIR=$target"
+          ) -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Installer smoke test failed with $($process.ExitCode)" }
+          if (-not (Test-Path (Join-Path $target 'Miaomiao.exe'))) {
+            throw 'Installed Miaomiao.exe was not found.'
+          }
+          $uninstaller = Join-Path $target 'unins000.exe'
+          $process = Start-Process -FilePath $uninstaller -ArgumentList @(
+            '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART'
+          ) -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Uninstaller smoke test failed with $($process.ExitCode)" }
+
       - name: Upload Windows artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: miaomiao-windows-${{ matrix.arch }}
-          path: Miaomiao-*-windows-${{ matrix.arch }}.zip
+          path: |
+            Miaomiao-*-windows-${{ matrix.arch }}.zip
+            Miaomiao-*-windows-${{ matrix.arch }}-setup.exe
           if-no-files-found: error
           retention-days: 14
 
