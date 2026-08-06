@@ -61,7 +61,7 @@ jobs:
           Expand-Archive -LiteralPath $zip -DestinationPath $payload -Force
           $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
           if (-not (Test-Path -LiteralPath $iscc)) { throw "Inno Setup compiler not found: $iscc" }
-          $icon = Join-Path $env:GITHUB_WORKSPACE 'v2rayN/v2rayN.Desktop/v2rayN.ico'
+          $icon = Join-Path $env:GITHUB_WORKSPACE 'v2rayN/v2rayN.Desktop/Assets/v2rayN.ico'
           & $iscc "/DAppVersion=$env:VERSION" "/DArch=${{ matrix.arch }}" `
             "/DPayloadDir=$payload" "/DOutputDir=$env:GITHUB_WORKSPACE" `
             "/DInstallerIcon=$icon" 'packaging/windows-installer.iss'
