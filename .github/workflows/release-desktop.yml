@@ -199,7 +199,7 @@ jobs:
             throw "Inno Setup compiler was not found at $iscc"
           }
           $payload = Join-Path $env:GITHUB_WORKSPACE "stage/Miaomiao-windows-$env:ARCH"
-          $icon = Join-Path $env:GITHUB_WORKSPACE 'v2rayN/v2rayN.Desktop/v2rayN.ico'
+          $icon = Join-Path $env:GITHUB_WORKSPACE 'v2rayN/v2rayN.Desktop/Assets/v2rayN.ico'
           & $iscc "/DAppVersion=$env:VERSION" "/DArch=$env:ARCH" `
             "/DPayloadDir=$payload" "/DOutputDir=$env:GITHUB_WORKSPACE" `
             "/DInstallerIcon=$icon" 'packaging/windows-installer.iss'
